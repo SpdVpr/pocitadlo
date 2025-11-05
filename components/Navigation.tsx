@@ -10,6 +10,7 @@ export default function Navigation() {
     { href: '/', label: 'Časovač', icon: '⏱️' },
     { href: '/projects', label: 'Projekty', icon: '📁' },
     { href: '/history', label: 'Historie', icon: '📊' },
+    { href: '/todo', label: 'TODO', icon: '✅' },
   ];
 
   return (

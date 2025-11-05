@@ -14,13 +14,14 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Project, TimeEntry, ActiveTimer } from '@/types';
+import { Project, TimeEntry, ActiveTimer, TodoItem } from '@/types';
 import { getCurrentMonthYear } from './utils';
 
 const COLLECTIONS = {
   PROJECTS: 'projects',
   TIME_ENTRIES: 'time_entries',
   ACTIVE_TIMER: 'active_timer',
+  TODOS: 'todos',
 };
 
 export async function createProject(
@@ -213,4 +214,51 @@ export async function resetMonthlyStats(): Promise<void> {
   );
 
   await Promise.all(updates);
+}
+
+// TODO List Functions
+export async function createTodo(text: string): Promise<string> {
+  const now = Timestamp.now();
+  
+  const todoData = {
+    text,
+    completed: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const docRef = await addDoc(collection(db, COLLECTIONS.TODOS), todoData);
+  return docRef.id;
+}
+
+export async function updateTodo(
+  id: string,
+  data: Partial<Omit<TodoItem, 'id' | 'createdAt'>>
+): Promise<void> {
+  const todoRef = doc(db, COLLECTIONS.TODOS, id);
+  await updateDoc(todoRef, {
+    ...data,
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export async function deleteTodo(id: string): Promise<void> {
+  const todoRef = doc(db, COLLECTIONS.TODOS, id);
+  await deleteDoc(todoRef);
+}
+
+export function subscribeToTodos(callback: (todos: TodoItem[]) => void) {
+  const q = query(
+    collection(db, COLLECTIONS.TODOS),
+    orderBy('createdAt', 'desc')
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const todos: TodoItem[] = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    } as TodoItem));
+    
+    callback(todos);
+  });
 }

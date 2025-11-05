@@ -40,3 +40,11 @@ export interface MonthlyStats {
   month: number;
   year: number;
 }
+
+export interface TodoItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
