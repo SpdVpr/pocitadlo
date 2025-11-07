@@ -298,13 +298,19 @@ export async function getActiveTimer(): Promise<ActiveTimer | null> {
 export function subscribeToActiveTimer(callback: (timer: ActiveTimer | null) => void) {
   const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, 'current');
   
-  return onSnapshot(timerRef, (snapshot) => {
-    if (snapshot.exists()) {
-      callback(snapshot.data() as ActiveTimer);
-    } else {
-      callback(null);
+  return onSnapshot(
+    timerRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        callback(snapshot.data() as ActiveTimer);
+      } else {
+        callback(null);
+      }
+    },
+    (error) => {
+      console.error('Error in active timer subscription:', error);
     }
-  });
+  );
 }
 
 export async function resetMonthlyStats(userId: string): Promise<void> {

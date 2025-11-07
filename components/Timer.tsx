@@ -43,7 +43,7 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
         setIsRunning(true);
         onProjectSelect(timer.projectId);
         setStartTime(timer.startTime.toDate());
-      } else {
+      } else if (timer && timer.projectId === null) {
         setIsRunning(false);
         setStartTime(null);
         setElapsedSeconds(0);
