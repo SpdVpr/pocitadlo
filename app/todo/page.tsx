@@ -77,11 +77,11 @@ function TodoPageContent() {
             value={newTodoText}
             onChange={(e) => setNewTodoText(e.target.value)}
             placeholder="Přidat nový úkol..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           <button
             type="submit"
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
           >
             Přidat
           </button>
@@ -104,16 +104,16 @@ function TodoPageContent() {
                   type="checkbox"
                   checked={todo.completed}
                   onChange={() => handleToggleComplete(todo)}
-                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500 cursor-pointer"
                 />
-                
+
                 {editingId === todo.id ? (
                   <div className="flex-1 flex gap-2">
                     <input
                       type="text"
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
-                      className="flex-1 px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
                       autoFocus
                     />
                     <button
@@ -134,7 +134,7 @@ function TodoPageContent() {
                     <span className="flex-1 text-gray-800">{todo.text}</span>
                     <button
                       onClick={() => handleStartEdit(todo)}
-                      className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      className="px-3 py-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
                     >
                       Upravit
                     </button>
@@ -168,7 +168,7 @@ function TodoPageContent() {
                   type="checkbox"
                   checked={todo.completed}
                   onChange={() => handleToggleComplete(todo)}
-                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500 cursor-pointer"
                 />
                 <span className="flex-1 text-gray-600 line-through">{todo.text}</span>
                 <button

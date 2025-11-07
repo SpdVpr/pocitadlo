@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Project, UserSettings } from '@/types';
 import { formatTime } from '@/lib/utils';
-import { setActiveTimer, createTimeEntry, subscribeToActiveTimer, subscribeToUserSettings } from '@/lib/firestore';
+import { setActiveTimer, createTimeEntry, subscribeToActiveTimer, subscribeToUserSettings, updateUserSettings } from '@/lib/firestore';
 import { useAuth } from '@/lib/authContext';
 
 interface TimerProps {
@@ -18,6 +18,7 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [timerStartOffset, setTimerStartOffset] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
@@ -99,6 +100,23 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
     setStartTime(null);
   };
 
+  const handleOffsetChange = async (offset: number) => {
+    if (!user) return;
+    try {
+      await updateUserSettings(user.uid, { timerStartOffset: offset });
+      setTimerStartOffset(offset);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  };
+
+  const offsetOptions = [
+    { label: '0', value: 0 },
+    { label: '15', value: 900 },
+    { label: '30', value: 1800 },
+    { label: '60', value: 3600 },
+  ];
+
   return (
     <div className="bg-gray-100 rounded-2xl shadow-lg p-8 mb-8">
       <div className="text-center">
@@ -121,19 +139,50 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
           )}
         </div>
 
-        <button
-          onClick={isRunning ? handleStop : handleStart}
-          disabled={!selectedProjectId && !isRunning}
-          className={`px-12 py-4 rounded-xl text-xl font-bold transition-all ${
-            isRunning
-              ? 'bg-red-500 hover:bg-red-600 text-white'
-              : selectedProjectId
-              ? 'bg-green-500 hover:bg-green-600 text-white'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          } ${isRunning ? 'animate-pulse' : ''}`}
-        >
-          {isRunning ? 'STOP' : 'START'}
-        </button>
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <button
+            onClick={isRunning ? handleStop : handleStart}
+            disabled={!selectedProjectId && !isRunning}
+            className={`px-12 py-4 rounded-xl text-xl font-bold transition-all ${
+              isRunning
+                ? 'bg-red-500 hover:bg-red-600 text-white'
+                : selectedProjectId
+                ? 'bg-green-500 hover:bg-green-600 text-white'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            } ${isRunning ? 'animate-pulse' : ''}`}
+          >
+            {isRunning ? 'STOP' : 'START'}
+          </button>
+
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="p-3 rounded-lg bg-white hover:bg-gray-50 transition-colors border border-gray-300"
+            title="Nastavení časovače"
+          >
+            <span className="text-xl">⚙️</span>
+          </button>
+        </div>
+
+        {showSettings && (
+          <div className="mt-4 p-4 bg-white rounded-xl border border-gray-200">
+            <p className="text-sm text-gray-600 mb-3">Začít časovač od:</p>
+            <div className="flex justify-center gap-2">
+              {offsetOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handleOffsetChange(option.value)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    timerStartOffset === option.value
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {option.label} min
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

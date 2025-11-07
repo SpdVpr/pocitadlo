@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   createUserWithEmailAndPassword,
@@ -23,10 +23,11 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   // Redirect if already logged in
-  if (user) {
-    router.push('/dashboard');
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
   const handleGoogleSignIn = async () => {
     setError('');

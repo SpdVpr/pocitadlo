@@ -118,7 +118,7 @@ export default function TimeAdjustDialog({ project, mode, onClose }: TimeAdjustD
               value={timeInput}
               onChange={(e) => setTimeInput(e.target.value)}
               placeholder="např. 2.5 nebo 2:30"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
 
@@ -130,7 +130,7 @@ export default function TimeAdjustDialog({ project, mode, onClose }: TimeAdjustD
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="např. Zapomenuté hodiny z víkendu..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               rows={3}
             />
           </div>

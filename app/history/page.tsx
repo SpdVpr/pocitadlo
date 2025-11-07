@@ -115,7 +115,7 @@ function HistoryPageContent() {
             <select
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               <option value="all">Všechny projekty</option>
               {projects.map((project) => (
@@ -133,7 +133,7 @@ function HistoryPageContent() {
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               {months.map((month) => (
                 <option key={month} value={month}>
@@ -150,7 +150,7 @@ function HistoryPageContent() {
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               {years.map((year) => (
                 <option key={year} value={year}>
@@ -236,8 +236,8 @@ function HistoryPageContent() {
                       <span
                         className={`px-2 py-1 text-xs font-semibold rounded-full ${
                           entry.type === 'timer'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-purple-100 text-purple-700'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-pink-100 text-pink-700'
                         }`}
                       >
                         {entry.type === 'timer' ? '⏱️ Časovač' : '✏️ Manuální'}

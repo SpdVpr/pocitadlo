@@ -9,7 +9,6 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import Timer from '@/components/Timer';
 import ProjectList from '@/components/ProjectList';
 import TimeAdjustDialog from '@/components/TimeAdjustDialog';
-import TimerSettings from '@/components/TimerSettings';
 
 function DashboardContent() {
   const { user, encryptionKey } = useAuth();
@@ -90,8 +89,6 @@ function DashboardContent() {
         selectedProjectId={selectedProjectId}
       />
 
-      <TimerSettings />
-
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Projekty</h2>
         <ProjectList
@@ -110,7 +107,7 @@ function DashboardContent() {
           </h3>
           <a
             href="/projects"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
           >
             Spravovat projekty
           </a>
@@ -132,7 +129,7 @@ function DashboardContent() {
         </div>
       </div>
 
-      <div className="bg-blue-50 rounded-2xl shadow-lg p-6">
+      <div className="bg-purple-50 rounded-2xl shadow-lg p-6">
         <h3 className="text-xl font-bold text-gray-800 mb-4">
           Denní statistiky
         </h3>
@@ -146,7 +143,7 @@ function DashboardContent() {
           </div>
           <div>
             <p className="text-gray-500 text-sm mb-1">Částka dnes</p>
-            <p className="text-3xl font-bold text-blue-600">
+            <p className="text-3xl font-bold text-purple-600">
               {formatPrice(dailyStats.totalPrice)}
             </p>
           </div>
