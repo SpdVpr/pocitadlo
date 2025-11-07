@@ -24,7 +24,7 @@ export default function AuthPage() {
 
   // Redirect if already logged in
   if (user) {
-    router.push('/');
+    router.push('/dashboard');
     return null;
   }
 
@@ -41,7 +41,7 @@ export default function AuthPage() {
       const encryptionKey = await deriveAndSetEncryptionKey(userCredential.user.uid, userCredential.user.uid);
       setEncryptionKey(encryptionKey);
       localStorage.setItem('encryptionKeyType', 'google');
-      router.push('/');
+      router.push('/dashboard');
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
         setError('Přihlášení bylo zrušeno');
@@ -69,7 +69,7 @@ export default function AuthPage() {
         localStorage.setItem('encryptionKeyType', 'password');
         // Store password in sessionStorage (cleared when browser closes)
         sessionStorage.setItem('userPassword', password);
-        router.push('/');
+        router.push('/dashboard');
       } else {
         // Register
         if (password !== confirmPassword) {
@@ -89,7 +89,7 @@ export default function AuthPage() {
         setEncryptionKey(encryptionKey);
         localStorage.setItem('encryptionKeyType', 'password');
         sessionStorage.setItem('userPassword', password);
-        router.push('/');
+        router.push('/dashboard');
       }
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
@@ -111,7 +111,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-purple-600 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">
           EvidujCas.cz
@@ -171,7 +171,7 @@ export default function AuthPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="vase@email.com"
               required
             />
@@ -185,7 +185,7 @@ export default function AuthPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="••••••••"
               required
             />
@@ -205,7 +205,7 @@ export default function AuthPage() {
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 placeholder="••••••••"
                 required
               />
@@ -215,7 +215,7 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+            className="w-full bg-purple-600 text-white font-semibold py-2 rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400"
           >
             {loading ? 'Zpracování...' : isLogin ? 'Přihlásit se' : 'Registrovat se'}
           </button>
@@ -229,14 +229,14 @@ export default function AuthPage() {
                 setIsLogin(!isLogin);
                 setError('');
               }}
-              className="text-blue-600 font-semibold hover:underline ml-2"
+              className="text-purple-600 font-semibold hover:underline ml-2"
             >
               {isLogin ? 'Registrujte se' : 'Přihlaste se'}
             </button>
           </p>
         </div>
 
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-gray-700">
+        <div className="mt-6 p-4 bg-purple-50 rounded-lg text-sm text-gray-700">
           <p className="font-semibold mb-2">⚠️ Důležité:</p>
           <ul className="list-disc list-inside space-y-1">
             <li>Vaše heslo se používá k šifrování dat</li>

@@ -12,7 +12,7 @@ export default function Navigation() {
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const links = [
-    { href: '/', label: 'Časovač', icon: '⏱️' },
+    { href: '/dashboard', label: 'Časovač', icon: '⏱️' },
     { href: '/projects', label: 'Projekty', icon: '📁' },
     { href: '/history', label: 'Historie', icon: '📊' },
     { href: '/todo', label: 'TODO', icon: '✅' },
@@ -20,11 +20,11 @@ export default function Navigation() {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/auth');
+    router.push('/');
   };
 
-  // Don't show navigation on auth page
-  if (pathname === '/auth') {
+  // Don't show navigation on auth page or landing page
+  if (pathname === '/auth' || pathname === '/') {
     return null;
   }
 
@@ -32,7 +32,7 @@ export default function Navigation() {
     <nav className="bg-gray-100 border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          <Link href="/" className="text-2xl font-bold text-blue-600">
+          <Link href="/dashboard" className="text-2xl font-bold text-blue-600">
             EvidujCas.cz
           </Link>
 
