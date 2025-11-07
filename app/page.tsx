@@ -1,15 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Project } from '@/types';
-import { subscribeToProjects } from '@/lib/firestore';
+import { Project, TimeEntry } from '@/types';
+import { subscribeToProjects, subscribeToDailyTimeEntries } from '@/lib/firestore';
 import { getCurrentMonthYear, getMonthName, formatHours, formatPrice } from '@/lib/utils';
+import { useAuth } from '@/lib/authContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import Timer from '@/components/Timer';
 import ProjectList from '@/components/ProjectList';
 import TimeAdjustDialog from '@/components/TimeAdjustDialog';
 
-export default function HomePage() {
+function HomePageContent() {
+  const { user, encryptionKey } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [dailyEntries, setDailyEntries] = useState<TimeEntry[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [dialogState, setDialogState] = useState<{
     isOpen: boolean;
@@ -22,12 +26,18 @@ export default function HomePage() {
   });
 
   useEffect(() => {
-    const unsubscribe = subscribeToProjects((newProjects) => {
-      setProjects(newProjects);
-    });
+    if (!user || !encryptionKey) return;
 
+    const unsubscribe = subscribeToProjects(user.uid, setProjects, encryptionKey);
     return () => unsubscribe();
-  }, []);
+  }, [user, encryptionKey]);
+
+  useEffect(() => {
+    if (!user || !encryptionKey) return;
+
+    const unsubscribe = subscribeToDailyTimeEntries(user.uid, setDailyEntries, encryptionKey);
+    return () => unsubscribe();
+  }, [user, encryptionKey]);
 
   const handleAddTime = (project: Project) => {
     setDialogState({
@@ -61,6 +71,14 @@ export default function HomePage() {
     { totalHours: 0, totalPrice: 0 }
   );
 
+  const dailyStats = dailyEntries.reduce(
+    (acc, entry) => ({
+      totalHours: acc.totalHours + entry.duration,
+      totalPrice: acc.totalPrice + entry.price,
+    }),
+    { totalHours: 0, totalPrice: 0 }
+  );
+
   const { month, year } = getCurrentMonthYear();
 
   return (
@@ -82,7 +100,7 @@ export default function HomePage() {
         />
       </div>
 
-      <div className="bg-gray-100 rounded-2xl shadow-lg p-6">
+      <div className="bg-gray-100 rounded-2xl shadow-lg p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold text-gray-800">
             Statistiky za {getMonthName(month)} {year}
@@ -94,7 +112,7 @@ export default function HomePage() {
             Spravovat projekty
           </a>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-6">
           <div>
             <p className="text-gray-500 text-sm mb-1">Celkový počet hodin</p>
@@ -111,6 +129,27 @@ export default function HomePage() {
         </div>
       </div>
 
+      <div className="bg-blue-50 rounded-2xl shadow-lg p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4">
+          Denní statistiky
+        </h3>
+
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <p className="text-gray-500 text-sm mb-1">Počet hodin dnes</p>
+            <p className="text-3xl font-bold text-gray-800">
+              {formatHours(dailyStats.totalHours)}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-sm mb-1">Částka dnes</p>
+            <p className="text-3xl font-bold text-blue-600">
+              {formatPrice(dailyStats.totalPrice)}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {dialogState.isOpen && dialogState.project && (
         <TimeAdjustDialog
           project={dialogState.project}
@@ -119,5 +158,13 @@ export default function HomePage() {
         />
       )}
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <ProtectedRoute>
+      <HomePageContent />
+    </ProtectedRoute>
   );
 }

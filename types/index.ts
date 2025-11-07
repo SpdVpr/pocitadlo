@@ -2,8 +2,9 @@ import { Timestamp } from 'firebase/firestore';
 
 export interface Project {
   id: string;
-  name: string;
-  hourlyRate: number;
+  userId: string;
+  name: string; // encrypted
+  hourlyRate: number; // encrypted
   color: string;
   totalTimeCurrentMonth: number;
   totalPriceCurrentMonth: number;
@@ -16,13 +17,14 @@ export type EntryType = 'timer' | 'manual';
 
 export interface TimeEntry {
   id: string;
+  userId: string;
   projectId: string;
   type: EntryType;
   startTime: Timestamp;
   endTime: Timestamp | null;
   duration: number;
-  price: number;
-  note?: string;
+  price: number; // encrypted
+  note?: string; // encrypted
   month: number;
   year: number;
   createdAt: Timestamp;
@@ -43,6 +45,7 @@ export interface MonthlyStats {
 
 export interface TodoItem {
   id: string;
+  userId: string;
   text: string;
   completed: boolean;
   createdAt: Timestamp;

@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react';
 import { Project } from '@/types';
 import { subscribeToProjects, createProject, updateProject, deleteProject } from '@/lib/firestore';
 import { formatHours, formatPrice } from '@/lib/utils';
+import { useAuth } from '@/lib/authContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 const COLORS = [
   '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
   '#EC4899', '#14B8A6', '#F97316', '#06B6D4', '#84CC16'
 ];
 
-export default function ProjectsPage() {
+function ProjectsPageContent() {
+  const { user, encryptionKey } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -22,17 +25,16 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = subscribeToProjects((newProjects) => {
-      setProjects(newProjects);
-    }, false);
+    if (!user || !encryptionKey) return;
 
+    const unsubscribe = subscribeToProjects(user.uid, setProjects, encryptionKey, false);
     return () => unsubscribe();
-  }, []);
+  }, [user, encryptionKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.hourlyRate) {
+
+    if (!formData.name || !formData.hourlyRate || !user || !encryptionKey) {
       alert('Vyplňte všechna pole');
       return;
     }
@@ -40,15 +42,15 @@ export default function ProjectsPage() {
     setLoading(true);
     try {
       const rate = parseFloat(formData.hourlyRate);
-      
+
       if (editingProject) {
         await updateProject(editingProject.id, {
           name: formData.name,
           hourlyRate: rate,
           color: formData.color,
-        });
+        }, encryptionKey);
       } else {
-        await createProject(formData.name, rate, formData.color);
+        await createProject(user.uid, formData.name, rate, formData.color, encryptionKey);
       }
 
       resetForm();
@@ -281,5 +283,13 @@ export default function ProjectsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ProjectsPage() {
+  return (
+    <ProtectedRoute>
+      <ProjectsPageContent />
+    </ProtectedRoute>
   );
 }

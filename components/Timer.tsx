@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Project } from '@/types';
 import { formatTime } from '@/lib/utils';
 import { setActiveTimer, createTimeEntry, subscribeToActiveTimer } from '@/lib/firestore';
+import { useAuth } from '@/lib/authContext';
 
 interface TimerProps {
   projects: Project[];
@@ -12,6 +13,7 @@ interface TimerProps {
 }
 
 export default function Timer({ projects, onProjectSelect, selectedProjectId }: TimerProps) {
+  const { user, encryptionKey } = useAuth();
   const [isRunning, setIsRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -61,17 +63,19 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
   };
 
   const handleStop = async () => {
-    if (!selectedProjectId || !selectedProject) return;
+    if (!selectedProjectId || !selectedProject || !user || !encryptionKey) return;
 
     setIsRunning(false);
     await setActiveTimer(null);
 
     if (elapsedSeconds > 0) {
       await createTimeEntry(
+        user.uid,
         selectedProjectId,
         elapsedSeconds,
         'timer',
-        selectedProject.hourlyRate
+        selectedProject.hourlyRate,
+        encryptionKey
       );
     }
 

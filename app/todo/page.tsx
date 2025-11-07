@@ -3,25 +3,30 @@
 import { useState, useEffect } from 'react';
 import { TodoItem } from '@/types';
 import { subscribeToTodos, createTodo, updateTodo, deleteTodo } from '@/lib/firestore';
+import { useAuth } from '@/lib/authContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
-export default function TodoPage() {
+function TodoPageContent() {
+  const { user } = useAuth();
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTodoText, setNewTodoText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
 
   useEffect(() => {
-    const unsubscribe = subscribeToTodos((newTodos) => {
+    if (!user) return;
+
+    const unsubscribe = subscribeToTodos(user.uid, (newTodos) => {
       setTodos(newTodos);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   const handleAddTodo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newTodoText.trim()) {
-      await createTodo(newTodoText.trim());
+    if (newTodoText.trim() && user) {
+      await createTodo(user.uid, newTodoText.trim());
       setNewTodoText('');
     }
   };
@@ -185,5 +190,13 @@ export default function TodoPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TodoPage() {
+  return (
+    <ProtectedRoute>
+      <TodoPageContent />
+    </ProtectedRoute>
   );
 }

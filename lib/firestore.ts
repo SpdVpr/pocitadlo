@@ -15,7 +15,8 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Project, TimeEntry, ActiveTimer, TodoItem } from '@/types';
-import { getCurrentMonthYear } from './utils';
+import { getCurrentMonthYear, getTodayDate } from './utils';
+import { encryptData, decryptData } from './encryption';
 
 const COLLECTIONS = {
   PROJECTS: 'projects',
@@ -25,16 +26,19 @@ const COLLECTIONS = {
 };
 
 export async function createProject(
+  userId: string,
   name: string,
   hourlyRate: number,
-  color: string
+  color: string,
+  encryptionKey: Uint8Array
 ): Promise<string> {
   const now = Timestamp.now();
   const { month, year } = getCurrentMonthYear();
-  
+
   const projectData = {
-    name,
-    hourlyRate,
+    userId,
+    name: encryptData(name, encryptionKey),
+    hourlyRate: encryptData(hourlyRate.toString(), encryptionKey),
     color,
     totalTimeCurrentMonth: 0,
     totalPriceCurrentMonth: 0,
@@ -49,13 +53,23 @@ export async function createProject(
 
 export async function updateProject(
   id: string,
-  data: Partial<Omit<Project, 'id' | 'createdAt'>>
+  data: Partial<Omit<Project, 'id' | 'createdAt'>>,
+  encryptionKey?: Uint8Array
 ): Promise<void> {
   const projectRef = doc(db, COLLECTIONS.PROJECTS, id);
-  await updateDoc(projectRef, {
-    ...data,
-    updatedAt: Timestamp.now(),
-  });
+  const updateData: any = { ...data, updatedAt: Timestamp.now() };
+
+  // Encrypt sensitive fields if provided
+  if (encryptionKey) {
+    if (data.name) {
+      updateData.name = encryptData(data.name, encryptionKey);
+    }
+    if (data.hourlyRate !== undefined) {
+      updateData.hourlyRate = encryptData(data.hourlyRate.toString(), encryptionKey);
+    }
+  }
+
+  await updateDoc(projectRef, updateData);
 }
 
 export async function deleteProject(id: string): Promise<void> {
@@ -64,32 +78,54 @@ export async function deleteProject(id: string): Promise<void> {
 }
 
 export function subscribeToProjects(
+  userId: string,
   callback: (projects: Project[]) => void,
+  encryptionKey: Uint8Array,
   activeOnly: boolean = true
 ) {
-  const q = query(collection(db, COLLECTIONS.PROJECTS));
+  const q = query(
+    collection(db, COLLECTIONS.PROJECTS),
+    where('userId', '==', userId)
+  );
 
   return onSnapshot(q, (snapshot) => {
-    let projects: Project[] = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Project));
-    
+    let projects: Project[] = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      try {
+        return {
+          id: doc.id,
+          ...data,
+          name: decryptData(data.name, encryptionKey),
+          hourlyRate: parseFloat(decryptData(data.hourlyRate, encryptionKey)),
+        } as Project;
+      } catch (error) {
+        console.error('Error decrypting project:', error);
+        return {
+          id: doc.id,
+          ...data,
+          name: '[Chyba při dešifrování]',
+          hourlyRate: 0,
+        } as Project;
+      }
+    });
+
     if (activeOnly) {
       projects = projects.filter(p => p.isActive);
     }
-    
+
     projects.sort((a, b) => a.name.localeCompare(b.name));
-    
+
     callback(projects);
   });
 }
 
 export async function createTimeEntry(
+  userId: string,
   projectId: string,
   duration: number,
   type: 'timer' | 'manual',
   hourlyRate: number,
+  encryptionKey: Uint8Array,
   note?: string
 ): Promise<string> {
   const now = Timestamp.now();
@@ -97,12 +133,13 @@ export async function createTimeEntry(
   const price = (duration / 3600) * hourlyRate;
 
   const entryData: any = {
+    userId,
     projectId,
     type,
     startTime: now,
     endTime: now,
     duration,
-    price,
+    price: encryptData(price.toString(), encryptionKey),
     month,
     year,
     createdAt: now,
@@ -110,7 +147,7 @@ export async function createTimeEntry(
   };
 
   if (note) {
-    entryData.note = note;
+    entryData.note = encryptData(note, encryptionKey);
   }
 
   const docRef = await addDoc(collection(db, COLLECTIONS.TIME_ENTRIES), entryData);
@@ -139,28 +176,96 @@ export async function updateProjectTotals(
 }
 
 export function subscribeToTimeEntries(
+  userId: string,
   callback: (entries: TimeEntry[]) => void,
+  encryptionKey: Uint8Array,
   projectId?: string,
   month?: number,
   year?: number
 ) {
-  const q = query(collection(db, COLLECTIONS.TIME_ENTRIES));
+  const q = query(
+    collection(db, COLLECTIONS.TIME_ENTRIES),
+    where('userId', '==', userId)
+  );
 
   return onSnapshot(q, (snapshot) => {
-    let entries: TimeEntry[] = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    } as TimeEntry));
-    
+    let entries: TimeEntry[] = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      try {
+        return {
+          id: doc.id,
+          ...data,
+          price: parseFloat(decryptData(data.price, encryptionKey)),
+          note: data.note ? decryptData(data.note, encryptionKey) : undefined,
+        } as TimeEntry;
+      } catch (error) {
+        console.error('Error decrypting entry:', error);
+        return {
+          id: doc.id,
+          ...data,
+          price: 0,
+          note: '[Chyba při dešifrování]',
+        } as TimeEntry;
+      }
+    });
+
     if (projectId) {
       entries = entries.filter(e => e.projectId === projectId);
     }
     if (month !== undefined && year !== undefined) {
       entries = entries.filter(e => e.month === month && e.year === year);
     }
-    
+
     entries.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-    
+
+    callback(entries);
+  });
+}
+
+export function subscribeToDailyTimeEntries(
+  userId: string,
+  callback: (entries: TimeEntry[]) => void,
+  encryptionKey: Uint8Array
+) {
+  const { day, month, year } = getTodayDate();
+  const q = query(
+    collection(db, COLLECTIONS.TIME_ENTRIES),
+    where('userId', '==', userId)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    let entries: TimeEntry[] = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      try {
+        return {
+          id: doc.id,
+          ...data,
+          price: parseFloat(decryptData(data.price, encryptionKey)),
+          note: data.note ? decryptData(data.note, encryptionKey) : undefined,
+        } as TimeEntry;
+      } catch (error) {
+        console.error('Error decrypting entry:', error);
+        return {
+          id: doc.id,
+          ...data,
+          price: 0,
+          note: '[Chyba při dešifrování]',
+        } as TimeEntry;
+      }
+    });
+
+    // Filter for today's entries
+    entries = entries.filter(e => {
+      const entryDate = e.createdAt.toDate();
+      return (
+        entryDate.getDate() === day &&
+        entryDate.getMonth() + 1 === month &&
+        entryDate.getFullYear() === year
+      );
+    });
+
+    entries.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
     callback(entries);
   });
 }
@@ -201,10 +306,13 @@ export function subscribeToActiveTimer(callback: (timer: ActiveTimer | null) => 
   });
 }
 
-export async function resetMonthlyStats(): Promise<void> {
-  const projectsRef = collection(db, COLLECTIONS.PROJECTS);
-  const snapshot = await getDocs(projectsRef);
-  
+export async function resetMonthlyStats(userId: string): Promise<void> {
+  const q = query(
+    collection(db, COLLECTIONS.PROJECTS),
+    where('userId', '==', userId)
+  );
+  const snapshot = await getDocs(q);
+
   const updates = snapshot.docs.map((doc) =>
     updateDoc(doc.ref, {
       totalTimeCurrentMonth: 0,
@@ -217,10 +325,11 @@ export async function resetMonthlyStats(): Promise<void> {
 }
 
 // TODO List Functions
-export async function createTodo(text: string): Promise<string> {
+export async function createTodo(userId: string, text: string): Promise<string> {
   const now = Timestamp.now();
-  
+
   const todoData = {
+    userId,
     text,
     completed: false,
     createdAt: now,
@@ -247,9 +356,10 @@ export async function deleteTodo(id: string): Promise<void> {
   await deleteDoc(todoRef);
 }
 
-export function subscribeToTodos(callback: (todos: TodoItem[]) => void) {
+export function subscribeToTodos(userId: string, callback: (todos: TodoItem[]) => void) {
   const q = query(
     collection(db, COLLECTIONS.TODOS),
+    where('userId', '==', userId),
     orderBy('createdAt', 'desc')
   );
 
@@ -258,7 +368,7 @@ export function subscribeToTodos(callback: (todos: TodoItem[]) => void) {
       id: doc.id,
       ...doc.data(),
     } as TodoItem));
-    
+
     callback(todos);
   });
 }

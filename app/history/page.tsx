@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react';
 import { Project, TimeEntry } from '@/types';
 import { subscribeToProjects, subscribeToTimeEntries, deleteTimeEntry, resetMonthlyStats } from '@/lib/firestore';
 import { formatHours, formatPrice, getCurrentMonthYear, getMonthName } from '@/lib/utils';
+import { useAuth } from '@/lib/authContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
-export default function HistoryPage() {
+function HistoryPageContent() {
+  const { user, encryptionKey } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
@@ -20,27 +23,28 @@ export default function HistoryPage() {
   }, [currentMonth, currentYear]);
 
   useEffect(() => {
-    const unsubscribe = subscribeToProjects((newProjects) => {
-      setProjects(newProjects);
-    }, false);
+    if (!user || !encryptionKey) return;
 
+    const unsubscribe = subscribeToProjects(user.uid, setProjects, encryptionKey, false);
     return () => unsubscribe();
-  }, []);
+  }, [user, encryptionKey]);
 
   useEffect(() => {
-    if (selectedMonth === 0 || selectedYear === 0) return;
+    if (selectedMonth === 0 || selectedYear === 0 || !user || !encryptionKey) return;
 
     const unsubscribe = subscribeToTimeEntries(
+      user.uid,
       (newEntries) => {
         setEntries(newEntries);
       },
+      encryptionKey,
       selectedProjectId === 'all' ? undefined : selectedProjectId,
       selectedMonth,
       selectedYear
     );
 
     return () => unsubscribe();
-  }, [selectedProjectId, selectedMonth, selectedYear]);
+  }, [selectedProjectId, selectedMonth, selectedYear, user, encryptionKey]);
 
   const handleDelete = async (entry: TimeEntry) => {
     if (confirm('Opravdu chcete smazat tento záznam?')) {
@@ -54,9 +58,11 @@ export default function HistoryPage() {
   };
 
   const handleResetMonth = async () => {
+    if (!user) return;
+
     if (confirm(`Opravdu chcete vynulovat statistiky za ${getMonthName(selectedMonth)} ${selectedYear}? Toto nelze vrátit zpět!`)) {
       try {
-        await resetMonthlyStats();
+        await resetMonthlyStats(user.uid);
         alert('Měsíční statistiky byly vynulovány');
       } catch (error) {
         console.error('Error resetting stats:', error);
@@ -263,5 +269,13 @@ export default function HistoryPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function HistoryPage() {
+  return (
+    <ProtectedRoute>
+      <HistoryPageContent />
+    </ProtectedRoute>
   );
 }

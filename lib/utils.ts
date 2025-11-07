@@ -42,3 +42,12 @@ export function getMonthName(month: number): string {
   ];
   return months[month - 1];
 }
+
+export function getTodayDate(): { day: number; month: number; year: number } {
+  const now = new Date();
+  return {
+    day: now.getDate(),
+    month: now.getMonth() + 1,
+    year: now.getFullYear(),
+  };
+}

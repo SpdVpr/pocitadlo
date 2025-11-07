@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
+import { AuthProvider } from "@/lib/authContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Počítadlo - Sledování odpracovaných hodin",
+  title: "EvidujCas.cz - Sledování odpracovaných hodin",
   description: "Jednoduchá aplikace pro sledování času a projektů",
 };
 
@@ -28,10 +29,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >
-        <Navigation />
-        <main className="max-w-7xl mx-auto px-4 py-8">
-          {children}
-        </main>
+        <AuthProvider>
+          <Navigation />
+          <main className="max-w-7xl mx-auto px-4 py-8">
+            {children}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   );

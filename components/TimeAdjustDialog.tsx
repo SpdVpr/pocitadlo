@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Project } from '@/types';
 import { parseTimeInput } from '@/lib/utils';
 import { createTimeEntry } from '@/lib/firestore';
+import { useAuth } from '@/lib/authContext';
 
 interface TimeAdjustDialogProps {
   project: Project;
@@ -12,6 +13,7 @@ interface TimeAdjustDialogProps {
 }
 
 export default function TimeAdjustDialog({ project, mode, onClose }: TimeAdjustDialogProps) {
+  const { user, encryptionKey } = useAuth();
   const [timeInput, setTimeInput] = useState('');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,8 +27,8 @@ export default function TimeAdjustDialog({ project, mode, onClose }: TimeAdjustD
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!timeInput) {
+
+    if (!timeInput || !user || !encryptionKey) {
       alert('Zadejte čas');
       return;
     }
@@ -34,7 +36,7 @@ export default function TimeAdjustDialog({ project, mode, onClose }: TimeAdjustD
     setLoading(true);
     try {
       let duration = parseTimeInput(timeInput);
-      
+
       if (mode === 'subtract') {
         if (duration > project.totalTimeCurrentMonth) {
           alert('Nelze odebrat více času, než má projekt');
@@ -45,10 +47,12 @@ export default function TimeAdjustDialog({ project, mode, onClose }: TimeAdjustD
       }
 
       await createTimeEntry(
+        user.uid,
         project.id,
         duration,
         'manual',
         project.hourlyRate,
+        encryptionKey,
         note || undefined
       );
 
