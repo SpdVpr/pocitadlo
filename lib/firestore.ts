@@ -14,7 +14,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Project, TimeEntry, ActiveTimer, TodoItem } from '@/types';
+import { Project, TimeEntry, ActiveTimer, TodoItem, UserSettings } from '@/types';
 import { getCurrentMonthYear, getTodayDate } from './utils';
 import { encryptData, decryptData } from './encryption';
 
@@ -23,6 +23,7 @@ const COLLECTIONS = {
   TIME_ENTRIES: 'time_entries',
   ACTIVE_TIMER: 'active_timer',
   TODOS: 'todos',
+  USER_SETTINGS: 'user_settings',
 };
 
 export async function createProject(
@@ -370,5 +371,53 @@ export function subscribeToTodos(userId: string, callback: (todos: TodoItem[]) =
     } as TodoItem));
 
     callback(todos);
+  });
+}
+
+// User Settings Functions
+export async function getUserSettings(userId: string): Promise<UserSettings | null> {
+  const settingsRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
+  const settingsSnap = await getDoc(settingsRef);
+
+  if (settingsSnap.exists()) {
+    return settingsSnap.data() as UserSettings;
+  }
+  return null;
+}
+
+export async function updateUserSettings(
+  userId: string,
+  settings: Partial<Omit<UserSettings, 'userId' | 'createdAt'>>
+): Promise<void> {
+  const settingsRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
+  const existingSettings = await getDoc(settingsRef);
+
+  if (existingSettings.exists()) {
+    await updateDoc(settingsRef, {
+      ...settings,
+      updatedAt: Timestamp.now(),
+    });
+  } else {
+    await setDoc(settingsRef, {
+      userId,
+      timerStartOffset: settings.timerStartOffset ?? 0,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+  }
+}
+
+export function subscribeToUserSettings(
+  userId: string,
+  callback: (settings: UserSettings | null) => void
+) {
+  const settingsRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
+
+  return onSnapshot(settingsRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data() as UserSettings);
+    } else {
+      callback(null);
+    }
   });
 }

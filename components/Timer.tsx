@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Project } from '@/types';
+import { Project, UserSettings } from '@/types';
 import { formatTime } from '@/lib/utils';
-import { setActiveTimer, createTimeEntry, subscribeToActiveTimer } from '@/lib/firestore';
+import { setActiveTimer, createTimeEntry, subscribeToActiveTimer, subscribeToUserSettings } from '@/lib/firestore';
 import { useAuth } from '@/lib/authContext';
 
 interface TimerProps {
@@ -17,8 +17,24 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
   const [isRunning, setIsRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [timerStartOffset, setTimerStartOffset] = useState(0);
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
+
+  // Subscribe to user settings
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = subscribeToUserSettings(user.uid, (settings) => {
+      if (settings) {
+        setTimerStartOffset(settings.timerStartOffset);
+      } else {
+        setTimerStartOffset(0); // Default to 0 if no settings
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   useEffect(() => {
     const unsubscribe = subscribeToActiveTimer((timer) => {
@@ -55,10 +71,10 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
     }
 
     const now = new Date();
-    const startWithOffset = new Date(now.getTime() - 30 * 60 * 1000);
+    const startWithOffset = new Date(now.getTime() - timerStartOffset * 1000);
     setStartTime(startWithOffset);
     setIsRunning(true);
-    setElapsedSeconds(1800);
+    setElapsedSeconds(timerStartOffset);
     await setActiveTimer(selectedProjectId, startWithOffset);
   };
 

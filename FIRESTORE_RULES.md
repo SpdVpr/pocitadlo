@@ -22,6 +22,10 @@ service cloud.firestore {
       allow create: if request.auth.uid == request.resource.data.userId;
     }
 
+    match /user_settings/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
     match /active_timer/{document=**} {
       allow read, write: if true;
     }
@@ -32,7 +36,8 @@ service cloud.firestore {
 ## Vysvětlení pravidel:
 
 1. **Projects, Time Entries, Todos**: Uživatel vidí a může upravovat jen své dokumenty (kde `userId == auth.uid`)
-2. **Active Timer**: Globální dokument pro aktuální běžící časovač (bez omezení)
+2. **User Settings**: Uživatel vidí a může upravovat jen své nastavení (document ID = userId)
+3. **Active Timer**: Globální dokument pro aktuální běžící časovač (bez omezení)
 
 ## Jak nastavit v Firebase Console:
 

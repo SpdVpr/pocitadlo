@@ -9,6 +9,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import Timer from '@/components/Timer';
 import ProjectList from '@/components/ProjectList';
 import TimeAdjustDialog from '@/components/TimeAdjustDialog';
+import TimerSettings from '@/components/TimerSettings';
 
 function DashboardContent() {
   const { user, encryptionKey } = useAuth();
@@ -88,6 +89,8 @@ function DashboardContent() {
         onProjectSelect={setSelectedProjectId}
         selectedProjectId={selectedProjectId}
       />
+
+      <TimerSettings />
 
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Projekty</h2>

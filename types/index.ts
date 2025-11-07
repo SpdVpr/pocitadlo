@@ -51,3 +51,10 @@ export interface TodoItem {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+export interface UserSettings {
+  userId: string;
+  timerStartOffset: number; // in seconds: 0, 900 (15min), 1800 (30min), 3600 (60min)
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
