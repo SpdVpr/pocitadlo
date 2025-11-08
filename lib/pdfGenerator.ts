@@ -242,11 +242,15 @@ function generateQRPaymentString(invoice: Invoice): string {
   }
 
   try {
+    // Remove leading zeros from variable symbol for SPAYD validation
+    // SPAYD requires VS to be either a number without leading zeros or exactly 10 digits
+    const vsWithoutLeadingZeros = invoice.variableSymbol.replace(/^0+/, '') || '0';
+
     console.log('Creating SPAYD string with params:', {
       acc: iban,
       am: invoice.totalPrice.toFixed(2),
       cc: 'CZK',
-      vs: invoice.variableSymbol,
+      vs: vsWithoutLeadingZeros,
     });
 
     // Use @spayd/core library to generate proper SPAYD string
@@ -255,7 +259,7 @@ function generateQRPaymentString(invoice: Invoice): string {
       am: invoice.totalPrice.toFixed(2),
       cc: 'CZK',
       x: {
-        vs: invoice.variableSymbol,
+        vs: vsWithoutLeadingZeros,
       },
     });
 
