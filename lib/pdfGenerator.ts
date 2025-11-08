@@ -194,7 +194,8 @@ function czechAccountToIBAN(accountNumber: string): string {
   const bban = bankCode + prefix + account;
 
   // Calculate check digits using modulo 97
-  const numericIBAN = bban + '123500'; // CZ = 1235, 00 for calculation
+  // Move country code and 00 to the end, convert letters to numbers (C=12, Z=35)
+  const numericIBAN = bban + '1235' + '00'; // CZ = 12 35, 00 for calculation
   let remainder = BigInt(numericIBAN) % BigInt(97);
   const checkDigits = (BigInt(98) - remainder).toString().padStart(2, '0');
 
@@ -214,7 +215,8 @@ function generateQRPaymentString(invoice: Invoice): string {
   const amount = invoice.totalPrice.toFixed(2);
   const vs = invoice.variableSymbol;
 
-  return `SPD*1.0*ACC:${iban}*AM:${amount}*CC:CZK*X-VS:${vs}`;
+  // SPD format: SPD*version*ACC:iban*AM:amount*CC:currency*X-VS:variableSymbol*
+  return `SPD*1.0*ACC:${iban}*AM:${amount}*CC:CZK*X-VS:${vs}*`;
 }
 
 function formatDate(date: Date): string {
