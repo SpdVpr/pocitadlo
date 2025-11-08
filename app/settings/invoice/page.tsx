@@ -219,15 +219,20 @@ function InvoiceSettingsContent() {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Číslo účtu
+                IBAN (pro QR platbu)
               </label>
               <input
                 type="text"
                 value={formData.bankAccount}
-                onChange={(e) => handleChange('bankAccount', e.target.value)}
+                onChange={(e) => handleChange('bankAccount', e.target.value.toUpperCase())}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="123456789/0100"
+                placeholder="CZ6508000000192000145399"
+                pattern="[A-Z]{2}[0-9]{22}"
+                maxLength={24}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Zadejte IBAN ve formátu CZ + 22 číslic (např. CZ6508000000192000145399)
+              </p>
             </div>
           </div>
         </div>

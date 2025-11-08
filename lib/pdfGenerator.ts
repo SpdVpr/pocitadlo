@@ -93,6 +93,11 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
     yPosition += 5;
     maxSupplierY = yPosition;
   }
+  if (invoice.supplier.bankAccount) {
+    doc.text('IBAN: ' + String(invoice.supplier.bankAccount), leftColX, yPosition);
+    yPosition += 5;
+    maxSupplierY = yPosition;
+  }
 
   yPosition = supplierY;
   doc.setFont('Roboto', 'bold');
@@ -166,12 +171,19 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
 
 function generateQRPaymentString(invoice: Invoice): string {
   if (!invoice.supplier.bankAccount) return '';
-  
+
+  const iban = invoice.supplier.bankAccount.replace(/\s/g, '').toUpperCase();
+
+  // Validate IBAN format (CZ + 22 digits)
+  if (!iban.match(/^CZ\d{22}$/)) {
+    console.warn('Invalid IBAN format, QR code will not be generated');
+    return '';
+  }
+
   const amount = invoice.totalPrice.toFixed(2);
   const vs = invoice.variableSymbol;
-  const accountNumber = invoice.supplier.bankAccount.replace(/\s/g, '');
-  
-  return `SPD*1.0*ACC:${accountNumber}*AM:${amount}*CC:CZK*X-VS:${vs}`;
+
+  return `SPD*1.0*ACC:${iban}*AM:${amount}*CC:CZK*X-VS:${vs}`;
 }
 
 function formatDate(date: Date): string {
