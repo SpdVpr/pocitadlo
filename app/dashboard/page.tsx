@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Project, TimeEntry } from '@/types';
-import { subscribeToProjects, subscribeToDailyTimeEntries } from '@/lib/firestore';
+import { subscribeToProjects, subscribeToDailyTimeEntries, resetProjectStats } from '@/lib/firestore';
 import { getCurrentMonthYear, getMonthName, formatHours, formatPrice } from '@/lib/utils';
 import { useAuth } from '@/lib/authContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import Timer from '@/components/Timer';
 import ProjectList from '@/components/ProjectList';
 import TimeAdjustDialog from '@/components/TimeAdjustDialog';
+import InvoiceDialog from '@/components/InvoiceDialog';
 
 function DashboardContent() {
   const { user, encryptionKey } = useAuth();
@@ -24,6 +25,7 @@ function DashboardContent() {
     project: null,
     mode: 'add',
   });
+  const [invoiceDialogProject, setInvoiceDialogProject] = useState<Project | null>(null);
 
   useEffect(() => {
     if (!user || !encryptionKey) return;
@@ -63,6 +65,22 @@ function DashboardContent() {
     });
   };
 
+  const handleCreateInvoice = (project: Project) => {
+    setInvoiceDialogProject(project);
+  };
+
+  const closeInvoiceDialog = () => {
+    setInvoiceDialogProject(null);
+  };
+
+  const handleResetProject = async (project: Project) => {
+    try {
+      await resetProjectStats(project.id);
+    } catch (error) {
+      console.error('Error resetting project:', error);
+    }
+  };
+
   const totalStats = projects.reduce(
     (acc, project) => ({
       totalHours: acc.totalHours + project.totalTimeCurrentMonth,
@@ -89,61 +107,63 @@ function DashboardContent() {
         selectedProjectId={selectedProjectId}
       />
 
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Projekty</h2>
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">Projekty</h2>
         <ProjectList
           projects={projects}
           selectedProjectId={selectedProjectId}
           onProjectSelect={setSelectedProjectId}
           onAddTime={handleAddTime}
           onSubtractTime={handleSubtractTime}
+          onCreateInvoice={handleCreateInvoice}
+          onResetProject={handleResetProject}
         />
       </div>
 
-      <div className="bg-gray-100 rounded-2xl shadow-lg p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-800">
+      <div className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-800">
             Statistiky za {getMonthName(month)} {year}
           </h3>
           <a
             href="/projects"
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+            className="w-full sm:w-auto text-center px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm sm:text-base"
           >
             Spravovat projekty
           </a>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
           <div>
-            <p className="text-gray-500 text-sm mb-1">Celkový počet hodin</p>
-            <p className="text-3xl font-bold text-gray-800">
+            <p className="text-gray-500 text-xs sm:text-sm mb-1">Celkový počet hodin</p>
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
               {formatHours(totalStats.totalHours)}
             </p>
           </div>
           <div>
-            <p className="text-gray-500 text-sm mb-1">Celková částka</p>
-            <p className="text-3xl font-bold text-green-600">
+            <p className="text-gray-500 text-xs sm:text-sm mb-1">Celková částka</p>
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">
               {formatPrice(totalStats.totalPrice)}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-purple-50 rounded-2xl shadow-lg p-6">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">
+      <div className="bg-purple-50 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">
           Denní statistiky
         </h3>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
           <div>
-            <p className="text-gray-500 text-sm mb-1">Počet hodin dnes</p>
-            <p className="text-3xl font-bold text-gray-800">
+            <p className="text-gray-500 text-xs sm:text-sm mb-1">Počet hodin dnes</p>
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
               {formatHours(dailyStats.totalHours)}
             </p>
           </div>
           <div>
-            <p className="text-gray-500 text-sm mb-1">Částka dnes</p>
-            <p className="text-3xl font-bold text-purple-600">
+            <p className="text-gray-500 text-xs sm:text-sm mb-1">Částka dnes</p>
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600">
               {formatPrice(dailyStats.totalPrice)}
             </p>
           </div>
@@ -155,6 +175,13 @@ function DashboardContent() {
           project={dialogState.project}
           mode={dialogState.mode}
           onClose={closeDialog}
+        />
+      )}
+
+      {invoiceDialogProject && (
+        <InvoiceDialog
+          project={invoiceDialogProject}
+          onClose={closeInvoiceDialog}
         />
       )}
     </div>

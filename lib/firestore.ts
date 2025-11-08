@@ -14,7 +14,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Project, TimeEntry, ActiveTimer, TodoItem, UserSettings } from '@/types';
+import { Project, TimeEntry, ActiveTimer, TodoItem, UserSettings, InvoiceSettings, ProjectInvoiceSettings, Invoice } from '@/types';
 import { getCurrentMonthYear, getTodayDate } from './utils';
 import { encryptData, decryptData } from './encryption';
 
@@ -24,6 +24,9 @@ const COLLECTIONS = {
   ACTIVE_TIMER: 'active_timer',
   TODOS: 'todos',
   USER_SETTINGS: 'user_settings',
+  INVOICE_SETTINGS: 'invoice_settings',
+  PROJECT_INVOICE_SETTINGS: 'project_invoice_settings',
+  INVOICES: 'invoices',
 };
 
 export async function createProject(
@@ -425,5 +428,163 @@ export function subscribeToUserSettings(
     } else {
       callback(null);
     }
+  });
+}
+
+export async function getInvoiceSettings(userId: string): Promise<InvoiceSettings | null> {
+  const settingsRef = doc(db, COLLECTIONS.INVOICE_SETTINGS, userId);
+  const settingsSnap = await getDoc(settingsRef);
+
+  if (settingsSnap.exists()) {
+    return settingsSnap.data() as InvoiceSettings;
+  }
+  return null;
+}
+
+export async function updateInvoiceSettings(
+  userId: string,
+  settings: Partial<Omit<InvoiceSettings, 'userId' | 'createdAt'>>
+): Promise<void> {
+  const settingsRef = doc(db, COLLECTIONS.INVOICE_SETTINGS, userId);
+  const existingSettings = await getDoc(settingsRef);
+
+  if (existingSettings.exists()) {
+    await updateDoc(settingsRef, {
+      ...settings,
+      updatedAt: Timestamp.now(),
+    });
+  } else {
+    await setDoc(settingsRef, {
+      userId,
+      companyName: settings.companyName ?? '',
+      street: settings.street ?? '',
+      city: settings.city ?? '',
+      zipCode: settings.zipCode ?? '',
+      ico: settings.ico ?? '',
+      dic: settings.dic,
+      phone: settings.phone,
+      email: settings.email,
+      bankAccount: settings.bankAccount,
+      invoicePrefix: settings.invoicePrefix ?? 'F',
+      nextInvoiceNumber: settings.nextInvoiceNumber ?? 1,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+  }
+}
+
+export function subscribeToInvoiceSettings(
+  userId: string,
+  callback: (settings: InvoiceSettings | null) => void
+) {
+  const settingsRef = doc(db, COLLECTIONS.INVOICE_SETTINGS, userId);
+
+  return onSnapshot(settingsRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data() as InvoiceSettings);
+    } else {
+      callback(null);
+    }
+  });
+}
+
+export async function getProjectInvoiceSettings(projectId: string): Promise<ProjectInvoiceSettings | null> {
+  const settingsRef = doc(db, COLLECTIONS.PROJECT_INVOICE_SETTINGS, projectId);
+  const settingsSnap = await getDoc(settingsRef);
+
+  if (settingsSnap.exists()) {
+    return settingsSnap.data() as ProjectInvoiceSettings;
+  }
+  return null;
+}
+
+export async function updateProjectInvoiceSettings(
+  projectId: string,
+  settings: Partial<Omit<ProjectInvoiceSettings, 'projectId' | 'createdAt'>>
+): Promise<void> {
+  const settingsRef = doc(db, COLLECTIONS.PROJECT_INVOICE_SETTINGS, projectId);
+  const existingSettings = await getDoc(settingsRef);
+
+  if (existingSettings.exists()) {
+    await updateDoc(settingsRef, {
+      ...settings,
+      updatedAt: Timestamp.now(),
+    });
+  } else {
+    await setDoc(settingsRef, {
+      projectId,
+      clientName: settings.clientName ?? '',
+      street: settings.street ?? '',
+      city: settings.city ?? '',
+      zipCode: settings.zipCode ?? '',
+      ico: settings.ico,
+      dic: settings.dic,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+  }
+}
+
+export async function createInvoice(
+  userId: string,
+  projectId: string,
+  invoiceData: Omit<Invoice, 'id' | 'userId' | 'projectId' | 'createdAt'>
+): Promise<string> {
+  const now = Timestamp.now();
+
+  const invoice = {
+    userId,
+    projectId,
+    ...invoiceData,
+    createdAt: now,
+  };
+
+  const docRef = await addDoc(collection(db, COLLECTIONS.INVOICES), invoice);
+
+  const settingsRef = doc(db, COLLECTIONS.INVOICE_SETTINGS, userId);
+  const settingsSnap = await getDoc(settingsRef);
+  
+  if (settingsSnap.exists()) {
+    const settings = settingsSnap.data() as InvoiceSettings;
+    await updateDoc(settingsRef, {
+      nextInvoiceNumber: settings.nextInvoiceNumber + 1,
+      updatedAt: Timestamp.now(),
+    });
+  }
+
+  return docRef.id;
+}
+
+export function subscribeToInvoices(
+  userId: string,
+  callback: (invoices: Invoice[]) => void,
+  projectId?: string
+) {
+  const q = query(
+    collection(db, COLLECTIONS.INVOICES),
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc')
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    let invoices: Invoice[] = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    } as Invoice));
+
+    if (projectId) {
+      invoices = invoices.filter(inv => inv.projectId === projectId);
+    }
+
+    callback(invoices);
+  });
+}
+
+export async function resetProjectStats(projectId: string): Promise<void> {
+  const projectRef = doc(db, COLLECTIONS.PROJECTS, projectId);
+  await updateDoc(projectRef, {
+    totalTimeCurrentMonth: 0,
+    totalPriceCurrentMonth: 0,
+    updatedAt: Timestamp.now(),
   });
 }

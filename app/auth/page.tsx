@@ -6,6 +6,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -22,6 +24,32 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Check for redirect result on mount
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          // User successfully signed in with redirect
+          const encryptionKey = await deriveAndSetEncryptionKey(result.user.uid, result.user.uid);
+          setEncryptionKey(encryptionKey);
+          localStorage.setItem('encryptionKeyType', 'google');
+          router.push('/dashboard');
+        }
+      } catch (err: any) {
+        if (err.code === 'auth/popup-closed-by-user') {
+          setError('Přihlášení bylo zrušeno');
+        } else if (err.code === 'auth/cancelled-popup-request') {
+          // Ignorovat - uživatel zavřel popup
+        } else {
+          setError(err.message || 'Chyba při přihlášení přes Google');
+        }
+      }
+    };
+
+    handleRedirectResult();
+  }, [router, setEncryptionKey]);
+
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
@@ -35,14 +63,25 @@ export default function AuthPage() {
 
     try {
       const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
 
-      // Pro Google přihlášení použijeme UID jako heslo pro derivaci klíče
-      // Toto je bezpečné, protože UID je jedinečný a známý pouze po přihlášení
-      const encryptionKey = await deriveAndSetEncryptionKey(userCredential.user.uid, userCredential.user.uid);
-      setEncryptionKey(encryptionKey);
-      localStorage.setItem('encryptionKeyType', 'google');
-      router.push('/dashboard');
+      // Detect if mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        // Use redirect for mobile devices to avoid WebView issues
+        await signInWithRedirect(auth, provider);
+        // Note: The redirect result will be handled in the useEffect hook above
+      } else {
+        // Use popup for desktop
+        const userCredential = await signInWithPopup(auth, provider);
+
+        // Pro Google přihlášení použijeme UID jako heslo pro derivaci klíče
+        // Toto je bezpečné, protože UID je jedinečný a známý pouze po přihlášení
+        const encryptionKey = await deriveAndSetEncryptionKey(userCredential.user.uid, userCredential.user.uid);
+        setEncryptionKey(encryptionKey);
+        localStorage.setItem('encryptionKeyType', 'google');
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
         setError('Přihlášení bylo zrušeno');
@@ -112,17 +151,17 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-purple-600 flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">
+    <div className="min-h-screen bg-purple-600 flex items-center justify-center px-4 py-8">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 text-center">
           EvidujCas.cz
         </h1>
-        <p className="text-gray-600 text-center mb-8">
+        <p className="text-sm sm:text-base text-gray-600 text-center mb-6 sm:mb-8">
           {isLogin ? 'Přihlášení' : 'Registrace'}
         </p>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg mb-4 sm:mb-6 text-sm sm:text-base">
             {error}
           </div>
         )}
@@ -131,7 +170,7 @@ export default function AuthPage() {
         <button
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-full bg-white border-2 border-gray-300 text-gray-700 font-semibold py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:bg-gray-100 flex items-center justify-center gap-2 mb-6"
+          className="w-full bg-white border-2 border-gray-300 text-gray-700 font-semibold py-2.5 sm:py-3 rounded-lg hover:bg-gray-50 transition-colors disabled:bg-gray-100 flex items-center justify-center gap-2 mb-4 sm:mb-6 text-sm sm:text-base"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -154,44 +193,44 @@ export default function AuthPage() {
           {loading ? 'Zpracování...' : 'Přihlásit se přes Google'}
         </button>
 
-        <div className="relative mb-6">
+        <div className="relative mb-4 sm:mb-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-300"></div>
           </div>
-          <div className="relative flex justify-center text-sm">
+          <div className="relative flex justify-center text-xs sm:text-sm">
             <span className="px-2 bg-white text-gray-500">nebo</span>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div>
-            <label className="block text-gray-700 font-semibold mb-2">
+            <label className="block text-sm sm:text-base text-gray-700 font-semibold mb-1.5 sm:mb-2">
               Email
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
               placeholder="vase@email.com"
               required
             />
           </div>
 
           <div>
-            <label className="block text-gray-700 font-semibold mb-2">
+            <label className="block text-sm sm:text-base text-gray-700 font-semibold mb-1.5 sm:mb-2">
               Heslo
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
               placeholder="••••••••"
               required
             />
             {!isLogin && (
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="text-gray-500 text-xs sm:text-sm mt-1">
                 Minimálně 8 znaků
               </p>
             )}
@@ -199,14 +238,14 @@ export default function AuthPage() {
 
           {!isLogin && (
             <div>
-              <label className="block text-gray-700 font-semibold mb-2">
+              <label className="block text-sm sm:text-base text-gray-700 font-semibold mb-1.5 sm:mb-2">
                 Potvrzení hesla
               </label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
                 placeholder="••••••••"
                 required
               />
@@ -216,30 +255,30 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 text-white font-semibold py-2 rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400"
+            className="w-full bg-purple-600 text-white font-semibold py-2.5 sm:py-3 rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400 text-sm sm:text-base"
           >
             {loading ? 'Zpracování...' : isLogin ? 'Přihlásit se' : 'Registrovat se'}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
+        <div className="mt-4 sm:mt-6 text-center">
+          <p className="text-sm sm:text-base text-gray-600">
             {isLogin ? 'Nemáte účet?' : 'Již máte účet?'}
             <button
               onClick={() => {
                 setIsLogin(!isLogin);
                 setError('');
               }}
-              className="text-purple-600 font-semibold hover:underline ml-2"
+              className="text-purple-600 font-semibold hover:underline ml-1 sm:ml-2 text-sm sm:text-base"
             >
               {isLogin ? 'Registrujte se' : 'Přihlaste se'}
             </button>
           </p>
         </div>
 
-        <div className="mt-6 p-4 bg-purple-50 rounded-lg text-sm text-gray-700">
-          <p className="font-semibold mb-2">⚠️ Důležité:</p>
-          <ul className="list-disc list-inside space-y-1">
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-purple-50 rounded-lg text-xs sm:text-sm text-gray-700">
+          <p className="font-semibold mb-1.5 sm:mb-2">⚠️ Důležité:</p>
+          <ul className="list-disc list-inside space-y-0.5 sm:space-y-1">
             <li>Vaše heslo se používá k šifrování dat</li>
             <li>Pokud heslo zapomenete, data nelze obnovit</li>
             <li>Heslo se nikdy neposílá na server</li>

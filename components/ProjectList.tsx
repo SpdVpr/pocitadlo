@@ -9,6 +9,8 @@ interface ProjectListProps {
   onProjectSelect: (projectId: string) => void;
   onAddTime: (project: Project) => void;
   onSubtractTime: (project: Project) => void;
+  onCreateInvoice: (project: Project) => void;
+  onResetProject: (project: Project) => void;
 }
 
 export default function ProjectList({
@@ -17,6 +19,8 @@ export default function ProjectList({
   onProjectSelect,
   onAddTime,
   onSubtractTime,
+  onCreateInvoice,
+  onResetProject,
 }: ProjectListProps) {
   if (projects.length === 0) {
     return (
@@ -46,6 +50,8 @@ export default function ProjectList({
           onSelect={() => onProjectSelect(project.id)}
           onAddTime={() => onAddTime(project)}
           onSubtractTime={() => onSubtractTime(project)}
+          onCreateInvoice={() => onCreateInvoice(project)}
+          onResetProject={() => onResetProject(project)}
         />
       ))}
     </div>

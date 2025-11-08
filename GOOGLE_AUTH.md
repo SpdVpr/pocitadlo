@@ -21,20 +21,44 @@ Aplikace EvidujCas.cz podporuje přihlášení přes Google účet pomocí Fireb
 
 #### Auth Page (`app/auth/page.tsx`):
 ```typescript
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider } from 'firebase/auth';
 
 const handleGoogleSignIn = async () => {
   const provider = new GoogleAuthProvider();
-  const userCredential = await signInWithPopup(auth, provider);
-  
-  // Pro Google přihlášení použijeme UID jako heslo pro derivaci klíče
-  const encryptionKey = await deriveAndSetEncryptionKey(
-    userCredential.user.uid, 
-    userCredential.user.uid
-  );
-  setEncryptionKey(encryptionKey);
-  router.push('/');
+
+  // Detect if mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    // Use redirect for mobile devices to avoid WebView issues
+    await signInWithRedirect(auth, provider);
+  } else {
+    // Use popup for desktop
+    const userCredential = await signInWithPopup(auth, provider);
+
+    // Pro Google přihlášení použijeme UID jako heslo pro derivaci klíče
+    const encryptionKey = await deriveAndSetEncryptionKey(
+      userCredential.user.uid,
+      userCredential.user.uid
+    );
+    setEncryptionKey(encryptionKey);
+    router.push('/dashboard');
+  }
 };
+
+// Handle redirect result on mount
+useEffect(() => {
+  const handleRedirectResult = async () => {
+    const result = await getRedirectResult(auth);
+    if (result) {
+      const encryptionKey = await deriveAndSetEncryptionKey(result.user.uid, result.user.uid);
+      setEncryptionKey(encryptionKey);
+      localStorage.setItem('encryptionKeyType', 'google');
+      router.push('/dashboard');
+    }
+  };
+  handleRedirectResult();
+}, []);
 ```
 
 ### 3. Šifrování pro Google uživatele
@@ -143,10 +167,14 @@ Některé prohlížeče blokují popup okna. Řešení:
 - Použít `signInWithRedirect` místo `signInWithPopup`
 - Varovat uživatele o povolení popupů
 
-#### 2. Mobilní zařízení
-Na mobilních zařízeních může být popup problematický. Řešení:
-- Použít `signInWithRedirect` pro mobilní zařízení
-- Detekovat mobilní zařízení a použít vhodnou metodu
+#### 2. Mobilní zařízení ✅ VYŘEŠENO
+Na mobilních zařízeních může být popup problematický.
+
+**Řešení implementováno:**
+- Automatická detekce mobilního zařízení
+- Použití `signInWithRedirect` pro mobily
+- Použití `signInWithPopup` pro desktop
+- Zpracování redirect výsledku při návratu
 
 #### 3. Šifrovací klíč
 Šifrovací klíč je odvozen z UID, ne z hesla. To znamená:
@@ -156,7 +184,7 @@ Na mobilních zařízeních může být popup problematický. Řešení:
 ### 9. Budoucí vylepšení
 
 #### Priorita 1:
-- [ ] Implementovat `signInWithRedirect` pro mobilní zařízení
+- [x] Implementovat `signInWithRedirect` pro mobilní zařízení ✅
 - [ ] Přidat varování o zabezpečení Google účtu
 - [ ] Implementovat "master password" pro extra bezpečnost
 

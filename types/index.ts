@@ -58,3 +58,69 @@ export interface UserSettings {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+export interface InvoiceSettings {
+  userId: string;
+  companyName: string;
+  street: string;
+  city: string;
+  zipCode: string;
+  ico: string;
+  dic?: string;
+  phone?: string;
+  email?: string;
+  bankAccount?: string;
+  invoicePrefix: string;
+  nextInvoiceNumber: number;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface ProjectInvoiceSettings {
+  projectId: string;
+  clientName: string;
+  street: string;
+  city: string;
+  zipCode: string;
+  ico?: string;
+  dic?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export type PaymentMethod = 'transfer' | 'cash';
+
+export interface Invoice {
+  id: string;
+  userId: string;
+  projectId: string;
+  invoiceNumber: string;
+  variableSymbol: string;
+  issueDate: Timestamp;
+  dueDate: Timestamp;
+  description: string;
+  hours: number;
+  hourlyRate: number;
+  totalPrice: number;
+  paymentMethod: PaymentMethod;
+  supplier: {
+    companyName: string;
+    street: string;
+    city: string;
+    zipCode: string;
+    ico: string;
+    dic?: string;
+    phone?: string;
+    email?: string;
+    bankAccount?: string;
+  };
+  client: {
+    companyName: string;
+    street: string;
+    city: string;
+    zipCode: string;
+    ico?: string;
+    dic?: string;
+  };
+  createdAt: Timestamp;
+}

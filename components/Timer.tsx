@@ -118,32 +118,32 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
   ];
 
   return (
-    <div className="bg-gray-100 rounded-2xl shadow-lg p-8 mb-8">
+    <div className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 md:p-8 mb-6 sm:mb-8">
       <div className="text-center">
-        <div className="text-6xl font-mono font-bold mb-4 text-gray-800">
+        <div className="text-4xl sm:text-5xl md:text-6xl font-mono font-bold mb-3 sm:mb-4 text-gray-800">
           {formatTime(elapsedSeconds)}
         </div>
 
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           {selectedProject ? (
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-gray-100">
               <div
-                className="w-4 h-4 rounded-full"
+                className="w-3 h-3 sm:w-4 sm:h-4 rounded-full flex-shrink-0"
                 style={{ backgroundColor: selectedProject.color }}
               />
-              <span className="font-semibold text-gray-800">{selectedProject.name}</span>
-              <span className="text-gray-500">({selectedProject.hourlyRate} Kč/hod)</span>
+              <span className="font-semibold text-sm sm:text-base text-gray-800 truncate max-w-[150px] sm:max-w-none">{selectedProject.name}</span>
+              <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">({selectedProject.hourlyRate} Kč/hod)</span>
             </div>
           ) : (
-            <div className="text-gray-500">Vyberte projekt</div>
+            <div className="text-sm sm:text-base text-gray-500">Vyberte projekt</div>
           )}
         </div>
 
-        <div className="flex items-center justify-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           <button
             onClick={isRunning ? handleStop : handleStart}
             disabled={!selectedProjectId && !isRunning}
-            className={`px-12 py-4 rounded-xl text-xl font-bold transition-all ${
+            className={`w-full sm:w-auto px-8 sm:px-12 py-3 sm:py-4 rounded-xl text-lg sm:text-xl font-bold transition-all ${
               isRunning
                 ? 'bg-red-500 hover:bg-red-600 text-white'
                 : selectedProjectId
@@ -156,22 +156,22 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
 
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="p-3 rounded-lg bg-white hover:bg-gray-50 transition-colors border border-gray-300"
+            className="p-2.5 sm:p-3 rounded-lg bg-white hover:bg-gray-50 transition-colors border border-gray-300 flex-shrink-0"
             title="Nastavení časovače"
           >
-            <span className="text-xl">⚙️</span>
+            <span className="text-lg sm:text-xl">⚙️</span>
           </button>
         </div>
 
         {showSettings && (
-          <div className="mt-4 p-4 bg-white rounded-xl border border-gray-200">
-            <p className="text-sm text-gray-600 mb-3">Začít časovač od:</p>
-            <div className="flex justify-center gap-2">
+          <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-white rounded-xl border border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Začít časovač od:</p>
+            <div className="flex justify-center gap-2 flex-wrap">
               {offsetOptions.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => handleOffsetChange(option.value)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                     timerStartOffset === option.value
                       ? 'bg-purple-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'

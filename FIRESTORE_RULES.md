@@ -26,6 +26,19 @@ service cloud.firestore {
       allow read, write: if request.auth.uid == userId;
     }
 
+    match /invoice_settings/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    match /project_invoice_settings/{projectId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /invoices/{document=**} {
+      allow read, write: if request.auth.uid == resource.data.userId;
+      allow create: if request.auth.uid == request.resource.data.userId;
+    }
+
     match /active_timer/{document=**} {
       allow read, write: if true;
     }
