@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.8",
-    "@spayd/core": "^0.0.3",
     "@types/qrcode": "^1.5.6",
     "firebase": "^12.5.0",
     "jspdf": "^3.0.3",

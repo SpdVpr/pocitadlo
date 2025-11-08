@@ -77,7 +77,7 @@ export default function InvoiceDialog({ project, onClose }: InvoiceDialogProps) 
       );
 
       const invoiceNumber = `${invoiceSettings.invoicePrefix}${invoiceSettings.nextInvoiceNumber.toString().padStart(4, '0')}`;
-      const variableSymbol = invoiceSettings.nextInvoiceNumber.toString().padStart(8, '0');
+      const variableSymbol = invoiceSettings.nextInvoiceNumber.toString();
 
       const invoice = {
         invoiceNumber,

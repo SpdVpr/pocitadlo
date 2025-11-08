@@ -2,7 +2,6 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Invoice } from '@/types';
 import QRCode from 'qrcode';
-import { createShortPaymentDescriptor } from '@spayd/core';
 import { robotoRegularBase64, robotoBoldBase64 } from './roboto-font';
 
 export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
@@ -168,9 +167,8 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
       console.log('QR data is valid, generating QR code image...');
       const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
         width: 512,
-        margin: 4,
-        errorCorrectionLevel: 'M',
-        type: 'image/png'
+        margin: 1,
+        errorCorrectionLevel: 'M'
       });
 
       const qrSize = 50;
@@ -243,21 +241,34 @@ function generateQRPaymentString(invoice: Invoice): string {
   }
 
   try {
-    // Remove leading zeros from variable symbol (like the PHP library does)
-    // The variable symbol should be used as-is without padding
-    const vs = invoice.variableSymbol.replace(/^0+/, '') || '0';
+    // According to official SPAYD specification at qr-platba.cz:
+    // X-VS: Max. 10 characters, Integer (whole number without leading zeros)
+    const variableSymbol = invoice.variableSymbol?.replace(/^0+/, '') || '0';
 
-    console.log('Creating SPAYD string with params:', {
-      acc: iban,
-      am: invoice.totalPrice.toFixed(2),
-      cc: 'CZK',
-      vs: vs,
-    });
+    // Build SPAYD string according to official specification
+    // Format: SPD*version*key:value*key:value*...
+    // All values must be from ISO-8859-1 charset, preferably alphanumeric for efficiency
+    const parts = ['SPD', '1.0'];
 
-    // Format: SPD*1.0*ACC:iban*AM:amount*CC:currency*X-VS:variableSymbol
-    const spaydString = `SPD*1.0*ACC:${iban}*AM:${invoice.totalPrice.toFixed(2)}*CC:CZK*X-VS:${vs}`;
+    // ACC is required - IBAN format
+    parts.push(`ACC:${iban}`);
+
+    // AM - amount (optional but recommended)
+    parts.push(`AM:${invoice.totalPrice.toFixed(2)}`);
+
+    // CC - currency (optional, defaults to CZK)
+    parts.push(`CC:CZK`);
+
+    // X-VS - variable symbol (optional, Czech extension)
+    if (variableSymbol) {
+      parts.push(`X-VS:${variableSymbol}`);
+    }
+
+    const spaydString = parts.join('*');
 
     console.log('Generated SPAYD string:', spaydString);
+    console.log('SPAYD length:', spaydString.length);
+
     return spaydString;
   } catch (error) {
     console.error('Error generating SPAYD string:', error);
