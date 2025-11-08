@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { getInvoiceSettings, updateInvoiceSettings, subscribeToInvoices } from '@/lib/firestore';
+import { getInvoiceSettings, updateInvoiceSettings, subscribeToInvoices, deleteInvoice } from '@/lib/firestore';
 import { Invoice } from '@/types';
 import { generateInvoicePDF } from '@/lib/pdfGenerator';
 
@@ -96,6 +96,19 @@ function InvoicingContent() {
 
   const handleDownloadInvoice = async (invoice: Invoice) => {
     await generateInvoicePDF(invoice);
+  };
+
+  const handleDeleteInvoice = async (invoiceId: string, invoiceNumber: string) => {
+    if (!confirm(`Opravdu chcete smazat fakturu ${invoiceNumber}?`)) {
+      return;
+    }
+
+    try {
+      await deleteInvoice(invoiceId);
+    } catch (err) {
+      console.error('Error deleting invoice:', err);
+      setError('Nepodařilo se smazat fakturu');
+    }
   };
 
   const formatDate = (timestamp: any) => {
@@ -385,12 +398,20 @@ function InvoicingContent() {
                               {formatCurrency(invoice.totalPrice)}
                             </p>
                           </div>
-                          <button
-                            onClick={() => handleDownloadInvoice(invoice)}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-                          >
-                            📥 Stáhnout PDF
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleDownloadInvoice(invoice)}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                            >
+                              📥 Stáhnout PDF
+                            </button>
+                            <button
+                              onClick={() => handleDeleteInvoice(invoice.id, invoice.invoiceNumber)}
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                            >
+                              🗑️ Smazat
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -155,39 +155,40 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
   doc.setFont('Roboto');
   yPosition += 15;
 
-  console.log('Payment method:', invoice.paymentMethod);
-  console.log('Bank account:', invoice.supplier.bankAccount);
+  // QR code temporarily disabled - will be fixed later
+  // console.log('Payment method:', invoice.paymentMethod);
+  // console.log('Bank account:', invoice.supplier.bankAccount);
 
-  if (invoice.paymentMethod === 'transfer' && invoice.supplier.bankAccount) {
-    console.log('Generating QR code...');
-    const qrData = generateQRPaymentString(invoice);
-    console.log('QR Payment String:', qrData);
+  // if (invoice.paymentMethod === 'transfer' && invoice.supplier.bankAccount) {
+  //   console.log('Generating QR code...');
+  //   const qrData = generateQRPaymentString(invoice);
+  //   console.log('QR Payment String:', qrData);
 
-    if (qrData) {
-      console.log('QR data is valid, generating QR code image...');
-      const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
-        width: 512,
-        margin: 4,
-        errorCorrectionLevel: 'M',
-        type: 'image/png'
-      });
+  //   if (qrData) {
+  //     console.log('QR data is valid, generating QR code image...');
+  //     const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
+  //       width: 512,
+  //       margin: 4,
+  //       errorCorrectionLevel: 'M',
+  //       type: 'image/png'
+  //     });
 
-      const qrSize = 50; // Increased from 40 to 50mm
-      const qrX = marginLeft;
-      const qrY = yPosition;
-      console.log('Adding QR code to PDF at position:', qrX, qrY);
-      doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+  //     const qrSize = 50; // Increased from 40 to 50mm
+  //     const qrX = marginLeft;
+  //     const qrY = yPosition;
+  //     console.log('Adding QR code to PDF at position:', qrX, qrY);
+  //     doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
 
-      doc.setFontSize(9);
-      doc.setFont('Roboto');
-      doc.text('QR Platba', qrX + 2, qrY + qrSize + 5);
-      console.log('QR code added successfully');
-    } else {
-      console.warn('QR data is empty, skipping QR code generation');
-    }
-  } else {
-    console.warn('QR code not generated - payment method or bank account missing');
-  }
+  //     doc.setFontSize(9);
+  //     doc.setFont('Roboto');
+  //     doc.text('QR Platba', qrX + 2, qrY + qrSize + 5);
+  //     console.log('QR code added successfully');
+  //   } else {
+  //     console.warn('QR data is empty, skipping QR code generation');
+  //   }
+  // } else {
+  //   console.warn('QR code not generated - payment method or bank account missing');
+  // }
 
   doc.save('faktura-' + invoice.invoiceNumber + '.pdf');
 }

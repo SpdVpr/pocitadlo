@@ -588,3 +588,8 @@ export async function resetProjectStats(projectId: string): Promise<void> {
     updatedAt: Timestamp.now(),
   });
 }
+
+export async function deleteInvoice(invoiceId: string): Promise<void> {
+  const invoiceRef = doc(db, COLLECTIONS.INVOICES, invoiceId);
+  await deleteDoc(invoiceRef);
+}
