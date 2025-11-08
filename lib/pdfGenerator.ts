@@ -94,7 +94,8 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
     maxSupplierY = yPosition;
   }
   if (invoice.supplier.bankAccount) {
-    doc.text('IBAN: ' + String(invoice.supplier.bankAccount), leftColX, yPosition);
+    const accountLabel = invoice.supplier.bankAccount.match(/^CZ\d{22}$/) ? 'IBAN:' : 'Číslo účtu:';
+    doc.text(accountLabel + ' ' + String(invoice.supplier.bankAccount), leftColX, yPosition);
     yPosition += 5;
     maxSupplierY = yPosition;
   }
@@ -169,14 +170,44 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
   doc.save('faktura-' + invoice.invoiceNumber + '.pdf');
 }
 
+function czechAccountToIBAN(accountNumber: string): string {
+  // Remove spaces
+  const cleaned = accountNumber.replace(/\s/g, '');
+
+  // Check if it's already IBAN
+  if (cleaned.match(/^CZ\d{22}$/)) {
+    return cleaned;
+  }
+
+  // Parse Czech account number format: [prefix-]account/bankCode
+  const match = cleaned.match(/^(?:(\d+)-)?(\d+)\/(\d+)$/);
+  if (!match) {
+    console.warn('Invalid account number format');
+    return '';
+  }
+
+  const prefix = (match[1] || '0').padStart(6, '0');
+  const account = match[2].padStart(10, '0');
+  const bankCode = match[3].padStart(4, '0');
+
+  // Create BBAN (Basic Bank Account Number)
+  const bban = bankCode + prefix + account;
+
+  // Calculate check digits using modulo 97
+  const numericIBAN = bban + '123500'; // CZ = 1235, 00 for calculation
+  let remainder = BigInt(numericIBAN) % BigInt(97);
+  const checkDigits = (BigInt(98) - remainder).toString().padStart(2, '0');
+
+  return `CZ${checkDigits}${bban}`;
+}
+
 function generateQRPaymentString(invoice: Invoice): string {
   if (!invoice.supplier.bankAccount) return '';
 
-  const iban = invoice.supplier.bankAccount.replace(/\s/g, '').toUpperCase();
+  const iban = czechAccountToIBAN(invoice.supplier.bankAccount);
 
-  // Validate IBAN format (CZ + 22 digits)
-  if (!iban.match(/^CZ\d{22}$/)) {
-    console.warn('Invalid IBAN format, QR code will not be generated');
+  if (!iban) {
+    console.warn('Could not convert to IBAN, QR code will not be generated');
     return '';
   }
 
