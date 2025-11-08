@@ -155,40 +155,40 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
   doc.setFont('Roboto');
   yPosition += 15;
 
-  // QR code temporarily disabled - will be fixed later
-  // console.log('Payment method:', invoice.paymentMethod);
-  // console.log('Bank account:', invoice.supplier.bankAccount);
+  // QR Payment Code
+  console.log('Payment method:', invoice.paymentMethod);
+  console.log('Bank account:', invoice.supplier.bankAccount);
 
-  // if (invoice.paymentMethod === 'transfer' && invoice.supplier.bankAccount) {
-  //   console.log('Generating QR code...');
-  //   const qrData = generateQRPaymentString(invoice);
-  //   console.log('QR Payment String:', qrData);
+  if (invoice.paymentMethod === 'transfer' && invoice.supplier.bankAccount) {
+    console.log('Generating QR code...');
+    const qrData = generateQRPaymentString(invoice);
+    console.log('QR Payment String:', qrData);
 
-  //   if (qrData) {
-  //     console.log('QR data is valid, generating QR code image...');
-  //     const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
-  //       width: 512,
-  //       margin: 4,
-  //       errorCorrectionLevel: 'M',
-  //       type: 'image/png'
-  //     });
+    if (qrData) {
+      console.log('QR data is valid, generating QR code image...');
+      const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
+        width: 512,
+        margin: 4,
+        errorCorrectionLevel: 'M',
+        type: 'image/png'
+      });
 
-  //     const qrSize = 50; // Increased from 40 to 50mm
-  //     const qrX = marginLeft;
-  //     const qrY = yPosition;
-  //     console.log('Adding QR code to PDF at position:', qrX, qrY);
-  //     doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+      const qrSize = 50;
+      const qrX = marginLeft;
+      const qrY = yPosition;
+      console.log('Adding QR code to PDF at position:', qrX, qrY);
+      doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
 
-  //     doc.setFontSize(9);
-  //     doc.setFont('Roboto');
-  //     doc.text('QR Platba', qrX + 2, qrY + qrSize + 5);
-  //     console.log('QR code added successfully');
-  //   } else {
-  //     console.warn('QR data is empty, skipping QR code generation');
-  //   }
-  // } else {
-  //   console.warn('QR code not generated - payment method or bank account missing');
-  // }
+      doc.setFontSize(9);
+      doc.setFont('Roboto');
+      doc.text('QR Platba', qrX + 2, qrY + qrSize + 5);
+      console.log('QR code added successfully');
+    } else {
+      console.warn('QR data is empty, skipping QR code generation');
+    }
+  } else {
+    console.warn('QR code not generated - payment method or bank account missing');
+  }
 
   doc.save('faktura-' + invoice.invoiceNumber + '.pdf');
 }
@@ -243,21 +243,19 @@ function generateQRPaymentString(invoice: Invoice): string {
   }
 
   try {
-    // X-VS requires exactly 10 digits according to Czech banking standards (KB specification)
-    // Pad the variable symbol to 10 digits with leading zeros
-    const vs10Digits = invoice.variableSymbol.padStart(10, '0');
+    // Remove leading zeros from variable symbol (like the PHP library does)
+    // The variable symbol should be used as-is without padding
+    const vs = invoice.variableSymbol.replace(/^0+/, '') || '0';
 
     console.log('Creating SPAYD string with params:', {
       acc: iban,
       am: invoice.totalPrice.toFixed(2),
       cc: 'CZK',
-      vs: vs10Digits,
+      vs: vs,
     });
 
-    // Create SPAYD string manually because @spayd/core has incorrect validation
-    // that doesn't allow leading zeros in X-VS (but KB specification requires 10 digits)
     // Format: SPD*1.0*ACC:iban*AM:amount*CC:currency*X-VS:variableSymbol
-    const spaydString = `SPD*1.0*ACC:${iban}*AM:${invoice.totalPrice.toFixed(2)}*CC:CZK*X-VS:${vs10Digits}`;
+    const spaydString = `SPD*1.0*ACC:${iban}*AM:${invoice.totalPrice.toFixed(2)}*CC:CZK*X-VS:${vs}`;
 
     console.log('Generated SPAYD string:', spaydString);
     return spaydString;
