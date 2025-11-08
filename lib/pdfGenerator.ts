@@ -156,7 +156,11 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
 
   if (invoice.paymentMethod === 'transfer' && invoice.supplier.bankAccount) {
     const qrData = generateQRPaymentString(invoice);
-    const qrCodeDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
+    const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
+      width: 200,
+      margin: 1,
+      errorCorrectionLevel: 'M'
+    });
     
     const qrX = marginLeft;
     const qrY = yPosition;
@@ -215,8 +219,9 @@ function generateQRPaymentString(invoice: Invoice): string {
   const amount = invoice.totalPrice.toFixed(2);
   const vs = invoice.variableSymbol;
 
-  // SPD format: SPD*version*ACC:iban*AM:amount*CC:currency*X-VS:variableSymbol*
-  return `SPD*1.0*ACC:${iban}*AM:${amount}*CC:CZK*X-VS:${vs}*`;
+  // SPD format: SPD*version*ACC:iban*AM:amount*CC:currency*X-VS:variableSymbol
+  // Note: No trailing asterisk according to official specification
+  return `SPD*1.0*ACC:${iban}*AM:${amount}*CC:CZK*X-VS:${vs}`;
 }
 
 function formatDate(date: Date): string {
