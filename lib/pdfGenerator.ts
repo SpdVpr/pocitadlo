@@ -165,16 +165,26 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
 
     if (qrData) {
       console.log('QR data is valid, generating QR code image...');
+      console.log('QR data string:', qrData);
+      console.log('QR data length:', qrData.length);
+      console.log('QR data bytes:', new TextEncoder().encode(qrData));
+
+      // Generate QR code with high quality settings for banking apps
+      // - Larger size (1024px) for better scanning
+      // - Margin 4 (recommended for print and mobile scanning)
+      // - Error correction M (15% recovery)
       const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
-        width: 512,
-        margin: 1,
+        width: 1024,
+        margin: 4,
         errorCorrectionLevel: 'M'
       });
 
-      const qrSize = 50;
+      // QR code size: 70mm (minimum recommended for reliable mobile scanning)
+      const qrSize = 70;
       const qrX = marginLeft;
       const qrY = yPosition;
       console.log('Adding QR code to PDF at position:', qrX, qrY);
+      console.log('QR code size:', qrSize, 'mm');
       doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
 
       doc.setFontSize(9);
@@ -220,7 +230,19 @@ function czechAccountToIBAN(accountNumber: string): string {
   let remainder = BigInt(numericIBAN) % BigInt(97);
   const checkDigits = (BigInt(98) - remainder).toString().padStart(2, '0');
 
-  return `CZ${checkDigits}${bban}`;
+  const iban = `CZ${checkDigits}${bban}`;
+
+  console.log('IBAN conversion:', {
+    input: accountNumber,
+    prefix: match[1] || '0',
+    account: match[2],
+    bankCode: match[3],
+    bban: bban,
+    checkDigits: checkDigits,
+    iban: iban
+  });
+
+  return iban;
 }
 
 function generateQRPaymentString(invoice: Invoice): string {
@@ -264,12 +286,21 @@ function generateQRPaymentString(invoice: Invoice): string {
       parts.push(`VS:${variableSymbol}`);
     }
 
+    // Join parts with * separator - NO trailing asterisk
     const spaydString = parts.join('*');
 
-    console.log('Generated SPAYD string:', spaydString);
-    console.log('SPAYD length:', spaydString.length);
+    // Validate: no spaces, no newlines, no BOM
+    const cleanString = spaydString.trim();
 
-    return spaydString;
+    console.log('Generated SPAYD string:', cleanString);
+    console.log('SPAYD length:', cleanString.length);
+    console.log('SPAYD parts:', parts);
+    console.log('Has spaces:', cleanString.includes(' '));
+    console.log('Has newlines:', cleanString.includes('\n'));
+    console.log('First char code:', cleanString.charCodeAt(0));
+    console.log('Last char code:', cleanString.charCodeAt(cleanString.length - 1));
+
+    return cleanString;
   } catch (error) {
     console.error('Error generating SPAYD string:', error);
     return '';
