@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Invoice } from '@/types';
 import QRCode from 'qrcode';
+import { createShortPaymentDescriptor } from '@spayd/core';
 import { robotoRegularBase64, robotoBoldBase64 } from './roboto-font';
 
 export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
@@ -156,19 +157,25 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
 
   if (invoice.paymentMethod === 'transfer' && invoice.supplier.bankAccount) {
     const qrData = generateQRPaymentString(invoice);
-    const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
-      width: 200,
-      margin: 1,
-      errorCorrectionLevel: 'M'
-    });
-    
-    const qrX = marginLeft;
-    const qrY = yPosition;
-    doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, 35, 35);
-    
-    doc.setFontSize(9);
-    doc.setFont('Roboto');
-    doc.text('QR Platba', qrX + 2, qrY + 40);
+    console.log('QR Payment String:', qrData); // Debug log
+
+    if (qrData) {
+      const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
+        width: 512,
+        margin: 4,
+        errorCorrectionLevel: 'M',
+        type: 'image/png'
+      });
+
+      const qrSize = 50; // Increased from 40 to 50mm
+      const qrX = marginLeft;
+      const qrY = yPosition;
+      doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+
+      doc.setFontSize(9);
+      doc.setFont('Roboto');
+      doc.text('QR Platba', qrX + 2, qrY + qrSize + 5);
+    }
   }
 
   doc.save('faktura-' + invoice.invoiceNumber + '.pdf');
@@ -216,12 +223,22 @@ function generateQRPaymentString(invoice: Invoice): string {
     return '';
   }
 
-  const amount = invoice.totalPrice.toFixed(2);
-  const vs = invoice.variableSymbol;
+  try {
+    // Use @spayd/core library to generate proper SPAYD string
+    const spaydString = createShortPaymentDescriptor({
+      acc: iban,
+      am: invoice.totalPrice.toFixed(2),
+      cc: 'CZK',
+      x: {
+        vs: invoice.variableSymbol,
+      },
+    });
 
-  // SPD format: SPD*version*ACC:iban*AM:amount*CC:currency*X-VS:variableSymbol
-  // Note: No trailing asterisk according to official specification
-  return `SPD*1.0*ACC:${iban}*AM:${amount}*CC:CZK*X-VS:${vs}`;
+    return spaydString;
+  } catch (error) {
+    console.error('Error generating SPAYD string:', error);
+    return '';
+  }
 }
 
 function formatDate(date: Date): string {
