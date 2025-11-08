@@ -155,11 +155,16 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
   doc.setFont('Roboto');
   yPosition += 15;
 
+  console.log('Payment method:', invoice.paymentMethod);
+  console.log('Bank account:', invoice.supplier.bankAccount);
+
   if (invoice.paymentMethod === 'transfer' && invoice.supplier.bankAccount) {
+    console.log('Generating QR code...');
     const qrData = generateQRPaymentString(invoice);
-    console.log('QR Payment String:', qrData); // Debug log
+    console.log('QR Payment String:', qrData);
 
     if (qrData) {
+      console.log('QR data is valid, generating QR code image...');
       const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
         width: 512,
         margin: 4,
@@ -170,12 +175,18 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
       const qrSize = 50; // Increased from 40 to 50mm
       const qrX = marginLeft;
       const qrY = yPosition;
+      console.log('Adding QR code to PDF at position:', qrX, qrY);
       doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
 
       doc.setFontSize(9);
       doc.setFont('Roboto');
       doc.text('QR Platba', qrX + 2, qrY + qrSize + 5);
+      console.log('QR code added successfully');
+    } else {
+      console.warn('QR data is empty, skipping QR code generation');
     }
+  } else {
+    console.warn('QR code not generated - payment method or bank account missing');
   }
 
   doc.save('faktura-' + invoice.invoiceNumber + '.pdf');
@@ -214,9 +225,16 @@ function czechAccountToIBAN(accountNumber: string): string {
 }
 
 function generateQRPaymentString(invoice: Invoice): string {
-  if (!invoice.supplier.bankAccount) return '';
+  console.log('generateQRPaymentString called');
+  console.log('Bank account:', invoice.supplier.bankAccount);
+
+  if (!invoice.supplier.bankAccount) {
+    console.warn('No bank account provided');
+    return '';
+  }
 
   const iban = czechAccountToIBAN(invoice.supplier.bankAccount);
+  console.log('Converted IBAN:', iban);
 
   if (!iban) {
     console.warn('Could not convert to IBAN, QR code will not be generated');
@@ -224,6 +242,13 @@ function generateQRPaymentString(invoice: Invoice): string {
   }
 
   try {
+    console.log('Creating SPAYD string with params:', {
+      acc: iban,
+      am: invoice.totalPrice.toFixed(2),
+      cc: 'CZK',
+      vs: invoice.variableSymbol,
+    });
+
     // Use @spayd/core library to generate proper SPAYD string
     const spaydString = createShortPaymentDescriptor({
       acc: iban,
@@ -234,6 +259,7 @@ function generateQRPaymentString(invoice: Invoice): string {
       },
     });
 
+    console.log('Generated SPAYD string:', spaydString);
     return spaydString;
   } catch (error) {
     console.error('Error generating SPAYD string:', error);
