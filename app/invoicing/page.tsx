@@ -103,6 +103,13 @@ function InvoicingContent() {
     return date.toLocaleDateString('cs-CZ');
   };
 
+  const formatCurrency = (amount: number): string => {
+    const formatted = amount.toFixed(2);
+    const [whole, decimal] = formatted.split('.');
+    const withSpaces = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return `${withSpaces},${decimal} Kč`;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -366,13 +373,13 @@ function InvoicingContent() {
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <span>Vystaveno: {formatDate(invoice.issueDate)}</span>
                             <span>Splatnost: {formatDate(invoice.dueDate)}</span>
-                            <span>{invoice.hours.toFixed(2)} hod × {invoice.hourlyRate} Kč</span>
+                            <span>{invoice.hours.toFixed(2)} hod × {formatCurrency(invoice.hourlyRate)}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <p className="text-2xl font-bold text-green-600">
-                              {invoice.totalPrice.toFixed(2)} Kč
+                              {formatCurrency(invoice.totalPrice)}
                             </p>
                           </div>
                           <button

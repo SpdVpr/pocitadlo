@@ -123,11 +123,11 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
     body: [[
       invoice.description,
       invoice.hours.toFixed(2),
-      invoice.hourlyRate.toFixed(2) + ' Kč',
-      invoice.totalPrice.toFixed(2) + ' Kč'
+      formatCurrency(invoice.hourlyRate),
+      formatCurrency(invoice.totalPrice)
     ]],
     margin: { left: marginLeft, right: marginRight },
-    styles: { 
+    styles: {
       font: 'Roboto',
       fontSize: 9,
       cellPadding: 3,
@@ -144,7 +144,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
 
   doc.setFontSize(12);
   doc.setFont('Roboto', 'bold');
-  doc.text('Cena celkem: ' + String(invoice.totalPrice.toFixed(2)) + ' Kč', pageWidth - marginRight, yPosition, { align: 'right' });
+  doc.text('Cena celkem: ' + formatCurrency(invoice.totalPrice), pageWidth - marginRight, yPosition, { align: 'right' });
   doc.setFont('Roboto');
   yPosition += 15;
 
@@ -179,4 +179,11 @@ function formatDate(date: Date): string {
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear();
   return `${day}.${month}.${year}`;
+}
+
+function formatCurrency(amount: number): string {
+  const formatted = amount.toFixed(2);
+  const [whole, decimal] = formatted.split('.');
+  const withSpaces = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return `${withSpaces},${decimal} Kč`;
 }

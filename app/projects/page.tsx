@@ -341,13 +341,6 @@ function ProjectsPageContent() {
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <button
-                        onClick={() => setInvoiceSettingsProject(project)}
-                        className="flex-1 px-3 sm:px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200 transition-colors text-xs sm:text-sm"
-                        title="Fakturační údaje klienta"
-                      >
-                        📄 Fakturace
-                      </button>
-                      <button
                         onClick={() => handleEdit(project)}
                         className="flex-1 px-3 sm:px-4 py-2 bg-purple-100 text-purple-700 rounded-lg font-semibold hover:bg-purple-200 transition-colors text-xs sm:text-sm"
                       >
