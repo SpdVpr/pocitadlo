@@ -92,7 +92,7 @@ export default function LandingPage() {
         <div className="mt-8 sm:mt-12 md:mt-16 relative px-4">
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-2 sm:p-4 max-w-5xl mx-auto border border-purple-100">
             <img
-              src="/MF6N-3.jpg"
+              src="/front-image.png"
               alt="EvidujCas.cz - Ukázka aplikace"
               className="w-full h-auto rounded-lg sm:rounded-xl"
             />
@@ -180,13 +180,13 @@ export default function LandingPage() {
           {/* Feature 6 */}
           <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100">
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4">
-              <span className="text-xl sm:text-2xl">☁️</span>
+              <span className="text-xl sm:text-2xl">📄</span>
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">
-              Cloud synchronizace
+              Fakturace projektů
             </h3>
             <p className="text-sm sm:text-base text-gray-600">
-              Vaše data jsou automaticky synchronizována v cloudu. Přístup z jakéhokoliv zařízení.
+              Generujte profesionální faktury s QR platbou přímo z odpracovaných hodin na projektech.
             </p>
           </div>
         </div>
