@@ -154,7 +154,12 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
   doc.setFont('Roboto');
   yPosition += 15;
 
-  // QR Payment Code
+  // QR Payment Code - TEMPORARILY DISABLED
+  // TODO: Fix QR code scanning issues with banking apps
+  // The SPAYD format is correct but some banks still can't scan it
+  // Will be re-enabled once the issue is resolved
+
+  /*
   console.log('Payment method:', invoice.paymentMethod);
   console.log('Bank account:', invoice.supplier.bankAccount);
 
@@ -197,6 +202,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
   } else {
     console.warn('QR code not generated - payment method or bank account missing');
   }
+  */
 
   doc.save('faktura-' + invoice.invoiceNumber + '.pdf');
 }
