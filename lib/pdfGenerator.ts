@@ -241,11 +241,10 @@ function generateQRPaymentString(invoice: Invoice): string {
   }
 
   try {
-    // According to official SPAYD specification at qr-platba.cz:
-    // X-VS: Max. 10 characters, Integer (whole number without leading zeros)
+    // Variable symbol: Max. 10 characters, Integer (whole number without leading zeros)
     const variableSymbol = invoice.variableSymbol?.replace(/^0+/, '') || '0';
 
-    // Build SPAYD string according to official specification
+    // Build SPAYD string according to SPAYD specification
     // Format: SPD*version*key:value*key:value*...
     // All values must be from ISO-8859-1 charset, preferably alphanumeric for efficiency
     const parts = ['SPD', '1.0'];
@@ -259,9 +258,10 @@ function generateQRPaymentString(invoice: Invoice): string {
     // CC - currency (optional, defaults to CZK)
     parts.push(`CC:CZK`);
 
-    // X-VS - variable symbol (optional, Czech extension)
+    // VS - variable symbol (using VS instead of X-VS for better compatibility)
+    // Some banks require VS: instead of X-VS: for proper recognition
     if (variableSymbol) {
-      parts.push(`X-VS:${variableSymbol}`);
+      parts.push(`VS:${variableSymbol}`);
     }
 
     const spaydString = parts.join('*');
