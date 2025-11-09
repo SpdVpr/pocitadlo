@@ -65,6 +65,18 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
     return () => clearInterval(interval);
   }, [isRunning, startTime]);
 
+  useEffect(() => {
+    if (isRunning && selectedProject) {
+      document.title = `${formatTime(elapsedSeconds)} - ${selectedProject.name}`;
+    } else {
+      document.title = 'EvidujCas.cz - Sledování odpracovaných hodin';
+    }
+
+    return () => {
+      document.title = 'EvidujCas.cz - Sledování odpracovaných hodin';
+    };
+  }, [isRunning, elapsedSeconds, selectedProject]);
+
   const handleStart = async () => {
     if (!selectedProjectId) {
       alert('Prosím vyberte projekt');
@@ -80,24 +92,37 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
   };
 
   const handleStop = async () => {
-    if (!selectedProjectId || !selectedProject || !user || !encryptionKey) return;
-
-    setIsRunning(false);
-    await setActiveTimer(null);
-
-    if (elapsedSeconds > 0) {
-      await createTimeEntry(
-        user.uid,
+    if (!selectedProjectId || !selectedProject || !user || !encryptionKey) {
+      console.error('Missing data for stopping timer:', {
         selectedProjectId,
-        elapsedSeconds,
-        'timer',
-        selectedProject.hourlyRate,
-        encryptionKey
-      );
+        selectedProject: !!selectedProject,
+        user: !!user,
+        encryptionKey: !!encryptionKey
+      });
+      return;
     }
 
+    setIsRunning(false);
     setElapsedSeconds(0);
     setStartTime(null);
+
+    try {
+      await setActiveTimer(null);
+
+      if (elapsedSeconds > 0) {
+        await createTimeEntry(
+          user.uid,
+          selectedProjectId,
+          elapsedSeconds,
+          'timer',
+          selectedProject.hourlyRate,
+          encryptionKey
+        );
+      }
+    } catch (error) {
+      console.error('Error stopping timer:', error);
+      alert('Chyba při zastavení časovače. Čas nebyl uložen.');
+    }
   };
 
   const handleOffsetChange = async (offset: number) => {
