@@ -129,8 +129,8 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
     body: [[
       invoice.description,
       invoice.hours.toFixed(2),
-      formatCurrency(invoice.hourlyRate),
-      formatCurrency(invoice.totalPrice)
+      formatCurrency(invoice.hourlyRate, invoice.currency),
+      formatCurrency(invoice.totalPrice, invoice.currency)
     ]],
     margin: { left: marginLeft, right: marginRight },
     styles: {
@@ -150,7 +150,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
 
   doc.setFontSize(12);
   doc.setFont('Roboto', 'bold');
-  doc.text('Cena celkem: ' + formatCurrency(invoice.totalPrice), pageWidth - marginRight, yPosition, { align: 'right' });
+  doc.text('Cena celkem: ' + formatCurrency(invoice.totalPrice, invoice.currency), pageWidth - marginRight, yPosition, { align: 'right' });
   doc.setFont('Roboto');
   yPosition += 15;
 
@@ -284,7 +284,7 @@ function generateQRPaymentString(invoice: Invoice): string {
     parts.push(`AM:${invoice.totalPrice.toFixed(2)}`);
 
     // CC - currency (optional, defaults to CZK)
-    parts.push(`CC:CZK`);
+    parts.push(`CC:${invoice.currency}`);
 
     // VS - variable symbol (using VS instead of X-VS for better compatibility)
     // Some banks require VS: instead of X-VS: for proper recognition
@@ -320,9 +320,10 @@ function formatDate(date: Date): string {
   return `${day}.${month}.${year}`;
 }
 
-function formatCurrency(amount: number): string {
+function formatCurrency(amount: number, currency: 'CZK' | 'EUR' = 'CZK'): string {
   const formatted = amount.toFixed(2);
   const [whole, decimal] = formatted.split('.');
   const withSpaces = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  return `${withSpaces},${decimal} Kč`;
+  const currencySymbol = currency === 'CZK' ? 'Kč' : '€';
+  return `${withSpaces},${decimal} ${currencySymbol}`;
 }

@@ -22,6 +22,7 @@ function ProjectsPageContent() {
   const [formData, setFormData] = useState({
     name: '',
     hourlyRate: '',
+    currency: 'CZK' as 'CZK' | 'EUR',
     color: COLORS[0],
     clientName: '',
     street: '',
@@ -56,11 +57,12 @@ function ProjectsPageContent() {
         await updateProject(editingProject.id, {
           name: formData.name,
           hourlyRate: rate,
+          currency: formData.currency,
           color: formData.color,
         }, encryptionKey);
         projectId = editingProject.id;
       } else {
-        projectId = await createProject(user.uid, formData.name, rate, formData.color, encryptionKey);
+        projectId = await createProject(user.uid, formData.name, rate, formData.currency, formData.color, encryptionKey);
       }
 
       if (formData.clientName) {
@@ -90,6 +92,7 @@ function ProjectsPageContent() {
     setFormData({
       name: project.name,
       hourlyRate: project.hourlyRate.toString(),
+      currency: project.currency || 'CZK',
       color: project.color,
       clientName: invoiceSettings?.clientName || '',
       street: invoiceSettings?.street || '',
@@ -124,6 +127,7 @@ function ProjectsPageContent() {
     setFormData({
       name: '',
       hourlyRate: '',
+      currency: 'CZK',
       color: COLORS[0],
       clientName: '',
       street: '',
@@ -173,7 +177,7 @@ function ProjectsPageContent() {
 
             <div className="mb-4">
               <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
-                Hodinová sazba (Kč)
+                Hodinová sazba
               </label>
               <input
                 type="number"
@@ -182,6 +186,20 @@ function ProjectsPageContent() {
                 placeholder="např. 500"
                 className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
               />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
+                Měna
+              </label>
+              <select
+                value={formData.currency}
+                onChange={(e) => setFormData({ ...formData, currency: e.target.value as 'CZK' | 'EUR' })}
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
+              >
+                <option value="CZK">Česká koruna (CZK)</option>
+                <option value="EUR">Euro (EUR)</option>
+              </select>
             </div>
 
             <div className="mb-6">
@@ -328,14 +346,14 @@ function ProjectsPageContent() {
                       />
                       <div className="flex-1 min-w-0">
                         <h3 className="text-base sm:text-xl font-bold text-gray-800 truncate">{project.name}</h3>
-                        <p className="text-sm sm:text-base text-gray-500">{project.hourlyRate} Kč/hod</p>
+                        <p className="text-sm sm:text-base text-gray-500">{project.hourlyRate} {(project.currency || 'CZK') === 'EUR' ? '€' : 'Kč'}/hod</p>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-lg sm:text-2xl font-bold text-gray-800">
                           {formatHours(project.totalTimeCurrentMonth)}
                         </p>
                         <p className="text-sm sm:text-lg font-semibold text-green-600">
-                          {formatPrice(project.totalPriceCurrentMonth)}
+                          {formatPrice(project.totalPriceCurrentMonth, project.currency || 'CZK')}
                         </p>
                       </div>
                     </div>
@@ -377,7 +395,7 @@ function ProjectsPageContent() {
                       />
                       <div className="min-w-0">
                         <h3 className="text-base sm:text-xl font-bold text-gray-800 truncate">{project.name}</h3>
-                        <p className="text-sm sm:text-base text-gray-500">{project.hourlyRate} Kč/hod</p>
+                        <p className="text-sm sm:text-base text-gray-500">{project.hourlyRate} {(project.currency || 'CZK') === 'EUR' ? '€' : 'Kč'}/hod</p>
                       </div>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">

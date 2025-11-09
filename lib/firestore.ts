@@ -33,6 +33,7 @@ export async function createProject(
   userId: string,
   name: string,
   hourlyRate: number,
+  currency: 'CZK' | 'EUR',
   color: string,
   encryptionKey: Uint8Array
 ): Promise<string> {
@@ -43,6 +44,7 @@ export async function createProject(
     userId,
     name: encryptData(name, encryptionKey),
     hourlyRate: encryptData(hourlyRate.toString(), encryptionKey),
+    currency,
     color,
     totalTimeCurrentMonth: 0,
     totalPriceCurrentMonth: 0,

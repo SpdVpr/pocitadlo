@@ -11,10 +11,10 @@ export function formatHours(seconds: number): string {
   return hours.toFixed(2) + 'h';
 }
 
-export function formatPrice(amount: number): string {
+export function formatPrice(amount: number, currency: 'CZK' | 'EUR' = 'CZK'): string {
   return new Intl.NumberFormat('cs-CZ', {
     style: 'currency',
-    currency: 'CZK',
+    currency: currency,
   }).format(amount);
 }
 

@@ -1,10 +1,13 @@
 import { Timestamp } from 'firebase/firestore';
 
+export type Currency = 'CZK' | 'EUR';
+
 export interface Project {
   id: string;
   userId: string;
   name: string; // encrypted
   hourlyRate: number; // encrypted
+  currency: Currency;
   color: string;
   totalTimeCurrentMonth: number;
   totalPriceCurrentMonth: number;
@@ -102,6 +105,7 @@ export interface Invoice {
   hours: number;
   hourlyRate: number;
   totalPrice: number;
+  currency: Currency;
   paymentMethod: PaymentMethod;
   supplier: {
     companyName: string;

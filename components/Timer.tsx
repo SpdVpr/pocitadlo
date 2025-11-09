@@ -132,7 +132,7 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
                 style={{ backgroundColor: selectedProject.color }}
               />
               <span className="font-semibold text-sm sm:text-base text-gray-800 truncate max-w-[150px] sm:max-w-none">{selectedProject.name}</span>
-              <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">({selectedProject.hourlyRate} Kč/hod)</span>
+              <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">({selectedProject.hourlyRate} {(selectedProject.currency || 'CZK') === 'EUR' ? '€' : 'Kč'}/hod)</span>
             </div>
           ) : (
             <div className="text-sm sm:text-base text-gray-500">Vyberte projekt</div>

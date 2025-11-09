@@ -39,7 +39,7 @@ export default function ProjectCard({
           />
           <div className="min-w-0">
             <h3 className="font-bold text-base sm:text-lg text-gray-800 truncate">{project.name}</h3>
-            <p className="text-xs sm:text-sm text-gray-500">{project.hourlyRate} Kč/hod</p>
+            <p className="text-xs sm:text-sm text-gray-500">{project.hourlyRate} {(project.currency || 'CZK') === 'EUR' ? '€' : 'Kč'}/hod</p>
           </div>
         </div>
 
@@ -83,7 +83,7 @@ export default function ProjectCard({
         </div>
         <div className="text-right">
           <p className="text-xl sm:text-2xl font-bold text-green-600">
-            {formatPrice(project.totalPriceCurrentMonth)}
+            {formatPrice(project.totalPriceCurrentMonth, project.currency || 'CZK')}
           </p>
           <p className="text-xs sm:text-sm text-gray-500">celkem</p>
         </div>

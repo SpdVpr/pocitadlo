@@ -88,6 +88,7 @@ export default function InvoiceDialog({ project, onClose }: InvoiceDialogProps) 
         hours,
         hourlyRate: project.hourlyRate,
         totalPrice,
+        currency: project.currency || 'CZK',
         paymentMethod,
         supplier: {
           companyName: invoiceSettings.companyName,
@@ -157,11 +158,11 @@ export default function InvoiceDialog({ project, onClose }: InvoiceDialogProps) 
           </div>
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Hodinová sazba:</span>
-            <span className="font-semibold">{project.hourlyRate} Kč/hod</span>
+            <span className="font-semibold">{project.hourlyRate} {(project.currency || 'CZK') === 'EUR' ? '€' : 'Kč'}/hod</span>
           </div>
           <div className="flex justify-between border-t border-purple-200 pt-2 mt-2">
             <span className="text-gray-800 font-bold">Celková cena:</span>
-            <span className="text-green-600 font-bold text-lg">{totalPrice.toFixed(2)} Kč</span>
+            <span className="text-green-600 font-bold text-lg">{totalPrice.toFixed(2)} {(project.currency || 'CZK') === 'EUR' ? '€' : 'Kč'}</span>
           </div>
         </div>
 
