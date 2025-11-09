@@ -14,7 +14,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Project, TimeEntry, ActiveTimer, TodoItem, UserSettings, InvoiceSettings, ProjectInvoiceSettings, Invoice } from '@/types';
+import { Project, TimeEntry, ActiveTimer, TodoItem, UserSettings, InvoiceSettings, ProjectInvoiceSettings, Invoice, Currency } from '@/types';
 import { getCurrentMonthYear, getTodayDate } from './utils';
 import { encryptData, decryptData } from './encryption';
 
@@ -131,6 +131,7 @@ export async function createTimeEntry(
   duration: number,
   type: 'timer' | 'manual',
   hourlyRate: number,
+  currency: Currency,
   encryptionKey: Uint8Array,
   note?: string
 ): Promise<string> {
@@ -146,6 +147,7 @@ export async function createTimeEntry(
     endTime: now,
     duration,
     price: encryptData(price.toString(), encryptionKey),
+    currency,
     month,
     year,
     createdAt: now,

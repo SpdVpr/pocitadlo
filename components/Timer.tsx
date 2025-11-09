@@ -116,6 +116,7 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
           elapsedSeconds,
           'timer',
           selectedProject.hourlyRate,
+          selectedProject.currency || 'CZK',
           encryptionKey
         );
       }

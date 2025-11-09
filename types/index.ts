@@ -27,6 +27,7 @@ export interface TimeEntry {
   endTime: Timestamp | null;
   duration: number;
   price: number; // encrypted
+  currency: Currency;
   note?: string; // encrypted
   month: number;
   year: number;

@@ -82,19 +82,37 @@ function DashboardContent() {
   };
 
   const totalStats = projects.reduce(
-    (acc, project) => ({
-      totalHours: acc.totalHours + project.totalTimeCurrentMonth,
-      totalPrice: acc.totalPrice + project.totalPriceCurrentMonth,
-    }),
-    { totalHours: 0, totalPrice: 0 }
+    (acc, project) => {
+      const currency = project.currency || 'CZK';
+      return {
+        CZK: {
+          totalHours: acc.CZK.totalHours + (currency === 'CZK' ? project.totalTimeCurrentMonth : 0),
+          totalPrice: acc.CZK.totalPrice + (currency === 'CZK' ? project.totalPriceCurrentMonth : 0),
+        },
+        EUR: {
+          totalHours: acc.EUR.totalHours + (currency === 'EUR' ? project.totalTimeCurrentMonth : 0),
+          totalPrice: acc.EUR.totalPrice + (currency === 'EUR' ? project.totalPriceCurrentMonth : 0),
+        },
+      };
+    },
+    { CZK: { totalHours: 0, totalPrice: 0 }, EUR: { totalHours: 0, totalPrice: 0 } }
   );
 
   const dailyStats = dailyEntries.reduce(
-    (acc, entry) => ({
-      totalHours: acc.totalHours + entry.duration,
-      totalPrice: acc.totalPrice + entry.price,
-    }),
-    { totalHours: 0, totalPrice: 0 }
+    (acc, entry) => {
+      const currency = entry.currency || 'CZK';
+      return {
+        CZK: {
+          totalHours: acc.CZK.totalHours + (currency === 'CZK' ? entry.duration : 0),
+          totalPrice: acc.CZK.totalPrice + (currency === 'CZK' ? entry.price : 0),
+        },
+        EUR: {
+          totalHours: acc.EUR.totalHours + (currency === 'EUR' ? entry.duration : 0),
+          totalPrice: acc.EUR.totalPrice + (currency === 'EUR' ? entry.price : 0),
+        },
+      };
+    },
+    { CZK: { totalHours: 0, totalPrice: 0 }, EUR: { totalHours: 0, totalPrice: 0 } }
   );
 
   const { month, year } = getCurrentMonthYear();
@@ -133,19 +151,39 @@ function DashboardContent() {
           </a>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:gap-6">
-          <div>
-            <p className="text-gray-500 text-xs sm:text-sm mb-1">Celkový počet hodin</p>
-            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
-              {formatHours(totalStats.totalHours)}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-500 text-xs sm:text-sm mb-1">Celková částka</p>
-            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">
-              {formatPrice(totalStats.totalPrice)}
-            </p>
-          </div>
+        <div className="space-y-4">
+          {totalStats.CZK.totalHours > 0 && (
+            <div className="grid grid-cols-2 gap-4 sm:gap-6">
+              <div>
+                <p className="text-gray-500 text-xs sm:text-sm mb-1">Celkový počet hodin (CZK)</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+                  {formatHours(totalStats.CZK.totalHours)}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs sm:text-sm mb-1">Celková částka (CZK)</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">
+                  {formatPrice(totalStats.CZK.totalPrice, 'CZK')}
+                </p>
+              </div>
+            </div>
+          )}
+          {totalStats.EUR.totalHours > 0 && (
+            <div className="grid grid-cols-2 gap-4 sm:gap-6">
+              <div>
+                <p className="text-gray-500 text-xs sm:text-sm mb-1">Celkový počet hodin (EUR)</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+                  {formatHours(totalStats.EUR.totalHours)}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs sm:text-sm mb-1">Celková částka (EUR)</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">
+                  {formatPrice(totalStats.EUR.totalPrice, 'EUR')}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -154,19 +192,39 @@ function DashboardContent() {
           Denní statistiky
         </h3>
 
-        <div className="grid grid-cols-2 gap-4 sm:gap-6">
-          <div>
-            <p className="text-gray-500 text-xs sm:text-sm mb-1">Počet hodin dnes</p>
-            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
-              {formatHours(dailyStats.totalHours)}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-500 text-xs sm:text-sm mb-1">Částka dnes</p>
-            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600">
-              {formatPrice(dailyStats.totalPrice)}
-            </p>
-          </div>
+        <div className="space-y-4">
+          {dailyStats.CZK.totalHours > 0 && (
+            <div className="grid grid-cols-2 gap-4 sm:gap-6">
+              <div>
+                <p className="text-gray-500 text-xs sm:text-sm mb-1">Počet hodin dnes (CZK)</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+                  {formatHours(dailyStats.CZK.totalHours)}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs sm:text-sm mb-1">Částka dnes (CZK)</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600">
+                  {formatPrice(dailyStats.CZK.totalPrice, 'CZK')}
+                </p>
+              </div>
+            </div>
+          )}
+          {dailyStats.EUR.totalHours > 0 && (
+            <div className="grid grid-cols-2 gap-4 sm:gap-6">
+              <div>
+                <p className="text-gray-500 text-xs sm:text-sm mb-1">Počet hodin dnes (EUR)</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+                  {formatHours(dailyStats.EUR.totalHours)}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs sm:text-sm mb-1">Částka dnes (EUR)</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600">
+                  {formatPrice(dailyStats.EUR.totalPrice, 'EUR')}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

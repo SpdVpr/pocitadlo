@@ -52,6 +52,7 @@ export default function TimeAdjustDialog({ project, mode, onClose }: TimeAdjustD
         duration,
         'manual',
         project.hourlyRate,
+        project.currency || 'CZK',
         encryptionKey,
         note || undefined
       );
