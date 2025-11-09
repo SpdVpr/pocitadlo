@@ -38,7 +38,7 @@ export async function createProject(
   encryptionKey: Uint8Array
 ): Promise<string> {
   const now = Timestamp.now();
-  const { month, year } = getCurrentMonthYear();
+  // const { month, year } = getCurrentMonthYear(); // Unused variables
 
   const projectData = {
     userId,
@@ -63,7 +63,7 @@ export async function updateProject(
   encryptionKey?: Uint8Array
 ): Promise<void> {
   const projectRef = doc(db, COLLECTIONS.PROJECTS, id);
-  const updateData: any = { ...data, updatedAt: Timestamp.now() };
+  const updateData: Record<string, unknown> = { ...data, updatedAt: Timestamp.now() };
 
   // Encrypt sensitive fields if provided
   if (encryptionKey) {
@@ -139,7 +139,7 @@ export async function createTimeEntry(
   const { month, year } = getCurrentMonthYear();
   const price = (duration / 3600) * hourlyRate;
 
-  const entryData: any = {
+  const entryData: Record<string, unknown> = {
     userId,
     projectId,
     type,

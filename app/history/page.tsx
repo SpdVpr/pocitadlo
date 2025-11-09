@@ -12,15 +12,10 @@ function HistoryPageContent() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
-  const [selectedMonth, setSelectedMonth] = useState<number>(0);
-  const [selectedYear, setSelectedYear] = useState<number>(0);
 
   const { month: currentMonth, year: currentYear } = getCurrentMonthYear();
-
-  useEffect(() => {
-    setSelectedMonth(currentMonth);
-    setSelectedYear(currentYear);
-  }, [currentMonth, currentYear]);
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
   useEffect(() => {
     if (!user || !encryptionKey) return;

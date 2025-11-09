@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Project, UserSettings } from '@/types';
+import type { Project } from '@/types';
 import { formatTime } from '@/lib/utils';
 import { setActiveTimer, createTimeEntry, subscribeToActiveTimer, subscribeToUserSettings, updateUserSettings } from '@/lib/firestore';
 import { useAuth } from '@/lib/authContext';

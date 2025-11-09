@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Stránky, které vyžadují autentizaci
-const protectedRoutes = ['/', '/projects', '/history', '/todo'];
+// const protectedRoutes = ['/', '/projects', '/history', '/todo']; // Unused variable
 
-export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+export function middleware(_request: NextRequest) {
+  // const pathname = request.nextUrl.pathname; // Unused variable
 
   // Pokud je to chráněná stránka a uživatel není přihlášen, přesměruj na login
   // Poznámka: Skutečná autentizace se provádí na klientu přes Firebase
   // Tento middleware je jen pro základní ochranu
-  
+
   return NextResponse.next();
 }
 

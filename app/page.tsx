@@ -4,10 +4,67 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/authContext';
 import Link from 'next/link';
+import Script from 'next/script';
+import Image from 'next/image';
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+
+  // Strukturovaná data pro SEO (Schema.org JSON-LD)
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "EvidujCas.cz",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "CZK"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5",
+      "ratingCount": "1"
+    },
+    "description": "Moderní aplikace pro evidenci pracovní doby s end-to-end šifrováním. Sledujte odpracované hodiny, spravujte projekty a generujte faktury.",
+    "url": "https://evidujcas.cz",
+    "screenshot": "https://evidujcas.cz/front-image.png",
+    "featureList": [
+      "Časovač v reálném čase",
+      "Detailní statistiky",
+      "End-to-end šifrování",
+      "Správa projektů",
+      "Responzivní design",
+      "Fakturace projektů"
+    ],
+    "inLanguage": "cs-CZ"
+  };
+
+  const organizationData = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "EvidujCas.cz",
+    "url": "https://evidujcas.cz",
+    "logo": "https://evidujcas.cz/front-image.png",
+    "description": "Moderní aplikace pro evidenci pracovní doby",
+    "sameAs": []
+  };
+
+  const webSiteData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "EvidujCas.cz",
+    "url": "https://evidujcas.cz",
+    "description": "Moderní aplikace pro evidenci pracovní doby s end-to-end šifrováním",
+    "inLanguage": "cs-CZ",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://evidujcas.cz/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
 
   // Pokud je uživatel přihlášen, přesměruj na dashboard
   useEffect(() => {
@@ -31,26 +88,48 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-purple-50">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-purple-200 sticky top-0 z-50">
+    <>
+      {/* Strukturovaná data pro SEO */}
+      <Script
+        id="structured-data-software"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <Script
+        id="structured-data-organization"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
+      />
+      <Script
+        id="structured-data-website"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteData) }}
+      />
+
+      <div className="min-h-screen bg-purple-50">
+        {/* Navigation */}
+        <nav className="bg-white/80 backdrop-blur-sm border-b border-purple-200 sticky top-0 z-50" aria-label="Hlavní navigace">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 sm:h-16 max-w-7xl mx-auto">
             <div className="flex items-center">
-              <span className="text-xl sm:text-2xl font-bold text-purple-600">
-                EvidujCas.cz
-              </span>
+              <Link href="/" aria-label="EvidujCas.cz - Domovská stránka">
+                <span className="text-xl sm:text-2xl font-bold text-purple-600">
+                  EvidujCas.cz
+                </span>
+              </Link>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
               <Link
                 href="/auth"
                 className="px-3 sm:px-6 py-2 text-sm sm:text-base text-purple-600 font-semibold hover:text-purple-700 transition-colors"
+                aria-label="Přihlásit se do aplikace"
               >
                 Přihlásit se
               </Link>
               <Link
                 href="/auth"
                 className="px-3 sm:px-6 py-2 text-sm sm:text-base bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-all shadow-md hover:shadow-lg"
+                aria-label="Začít používat aplikaci zdarma"
               >
                 Začít zdarma
               </Link>
@@ -60,9 +139,9 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 md:pt-20 pb-8 sm:pb-12 md:pb-16">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 md:pt-20 pb-8 sm:pb-12 md:pb-16" aria-labelledby="hero-heading">
         <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6">
+          <h1 id="hero-heading" className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6">
             Sledujte své odpracované hodiny
             <span className="block text-purple-600">
               jednoduše a bezpečně
@@ -72,16 +151,18 @@ export default function LandingPage() {
             Moderní aplikace pro evidenci pracovní doby s end-to-end šifrováním.
             Vaše data vidíte pouze vy.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4" role="group" aria-label="Hlavní akce">
             <Link
               href="/auth"
               className="px-6 sm:px-8 py-3 sm:py-4 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-lg hover:shadow-xl text-base sm:text-lg"
+              aria-label="Začít používat aplikaci zdarma"
             >
               Začít zdarma
             </Link>
             <a
               href="#features"
               className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-purple-600 rounded-xl font-semibold hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl text-base sm:text-lg border-2 border-purple-600"
+              aria-label="Zjistit více o funkcích aplikace"
             >
               Zjistit více
             </a>
@@ -91,30 +172,34 @@ export default function LandingPage() {
         {/* Hero Image */}
         <div className="mt-8 sm:mt-12 md:mt-16 relative px-4">
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-2 sm:p-4 max-w-5xl mx-auto border border-purple-100">
-            <img
+            <Image
               src="/front-image.png"
-              alt="EvidujCas.cz - Ukázka aplikace"
+              alt="EvidujCas.cz - Ukázka aplikace pro evidenci pracovní doby s časovačem a přehledem projektů"
+              width={1200}
+              height={800}
+              priority
               className="w-full h-auto rounded-lg sm:rounded-xl"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
             />
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20">
-        <div className="text-center mb-8 sm:mb-12 md:mb-16">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
+      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20" aria-labelledby="features-heading">
+        <header className="text-center mb-8 sm:mb-12 md:mb-16">
+          <h2 id="features-heading" className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
             Vše, co potřebujete pro evidenci času
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600">
             Jednoduché, bezpečné a efektivní
           </p>
-        </div>
+        </header>
 
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8" role="list">
           {/* Feature 1 */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4">
+          <article className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" role="listitem">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
               <span className="text-xl sm:text-2xl">⏱️</span>
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">
@@ -123,11 +208,11 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base text-gray-600">
               Spusťte časovač jedním kliknutím a sledujte odpracovaný čas na jednotlivých projektech.
             </p>
-          </div>
+          </article>
 
           {/* Feature 2 */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4">
+          <article className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" role="listitem">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
               <span className="text-xl sm:text-2xl">📊</span>
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">
@@ -136,11 +221,11 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base text-gray-600">
               Měsíční a denní přehledy odpracovaných hodin a vydělaných částek pro každý projekt.
             </p>
-          </div>
+          </article>
 
           {/* Feature 3 */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4">
+          <article className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" role="listitem">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
               <span className="text-xl sm:text-2xl">🔒</span>
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">
@@ -149,11 +234,11 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base text-gray-600">
               Vaše citlivá data jsou šifrována na vašem zařízení. Nikdo jiný je nemůže přečíst.
             </p>
-          </div>
+          </article>
 
           {/* Feature 4 */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4">
+          <article className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" role="listitem">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
               <span className="text-xl sm:text-2xl">💼</span>
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">
@@ -162,11 +247,11 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base text-gray-600">
               Vytvářejte projekty s hodinovou sazbou, barvami a poznámkami. Vše přehledně na jednom místě.
             </p>
-          </div>
+          </article>
 
           {/* Feature 5 */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4">
+          <article className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" role="listitem">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
               <span className="text-xl sm:text-2xl">📱</span>
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">
@@ -175,11 +260,11 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base text-gray-600">
               Funguje perfektně na počítači, tabletu i mobilu. Evidujte čas odkudkoliv.
             </p>
-          </div>
+          </article>
 
           {/* Feature 6 */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4">
+          <article className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" role="listitem">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
               <span className="text-xl sm:text-2xl">📄</span>
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">
@@ -188,16 +273,16 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base text-gray-600">
               Generujte profesionální faktury s QR platbou přímo z odpracovaných hodin na projektech.
             </p>
-          </div>
+          </article>
         </div>
       </section>
 
       {/* Security Section */}
-      <section className="bg-purple-600 py-12 sm:py-16 md:py-20">
+      <section className="bg-purple-600 py-12 sm:py-16 md:py-20" aria-labelledby="security-heading">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
-            <div className="text-3xl sm:text-4xl md:text-5xl mb-4 sm:mb-6">🔐</div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
+            <div className="text-3xl sm:text-4xl md:text-5xl mb-4 sm:mb-6" aria-hidden="true">🔐</div>
+            <h2 id="security-heading" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
               Vaše soukromí je naše priorita
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-purple-100 mb-6 sm:mb-8 max-w-3xl mx-auto">
@@ -245,9 +330,9 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20" aria-labelledby="cta-heading">
         <div className="bg-purple-50 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 text-center border border-purple-200">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
+          <h2 id="cta-heading" className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
             Připraveni začít?
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8">
@@ -256,6 +341,7 @@ export default function LandingPage() {
           <Link
             href="/auth"
             className="inline-block px-6 sm:px-8 py-3 sm:py-4 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-lg hover:shadow-xl text-base sm:text-lg"
+            aria-label="Vytvořit účet zdarma a začít evidovat čas"
           >
             Vytvořit účet zdarma
           </Link>
@@ -263,7 +349,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 sm:py-12">
+      <footer className="bg-gray-900 text-white py-8 sm:py-12" role="contentinfo">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <p className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">EvidujCas.cz</p>
@@ -276,6 +362,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }

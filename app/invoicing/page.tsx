@@ -111,7 +111,7 @@ function InvoicingContent() {
     }
   };
 
-  const formatDate = (timestamp: any) => {
+  const formatDate = (timestamp: { toDate: () => Date }) => {
     const date = timestamp.toDate();
     return date.toLocaleDateString('cs-CZ');
   };

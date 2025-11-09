@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { getInvoiceSettings, updateInvoiceSettings } from '@/lib/firestore';
-import { InvoiceSettings } from '@/types';
 
 function InvoiceSettingsContent() {
   const { user } = useAuth();

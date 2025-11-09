@@ -36,13 +36,14 @@ export default function AuthPage() {
           localStorage.setItem('encryptionKeyType', 'google');
           router.push('/dashboard');
         }
-      } catch (err: any) {
-        if (err.code === 'auth/popup-closed-by-user') {
+      } catch (err: unknown) {
+        const error = err as { code?: string; message?: string };
+        if (error.code === 'auth/popup-closed-by-user') {
           setError('Přihlášení bylo zrušeno');
-        } else if (err.code === 'auth/cancelled-popup-request') {
+        } else if (error.code === 'auth/cancelled-popup-request') {
           // Ignorovat - uživatel zavřel popup
         } else {
-          setError(err.message || 'Chyba při přihlášení přes Google');
+          setError(error.message || 'Chyba při přihlášení přes Google');
         }
       }
     };
@@ -82,13 +83,14 @@ export default function AuthPage() {
         localStorage.setItem('encryptionKeyType', 'google');
         router.push('/dashboard');
       }
-    } catch (err: any) {
-      if (err.code === 'auth/popup-closed-by-user') {
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string };
+      if (error.code === 'auth/popup-closed-by-user') {
         setError('Přihlášení bylo zrušeno');
-      } else if (err.code === 'auth/cancelled-popup-request') {
+      } else if (error.code === 'auth/cancelled-popup-request') {
         // Ignorovat - uživatel zavřel popup
       } else {
-        setError(err.message || 'Chyba při přihlášení přes Google');
+        setError(error.message || 'Chyba při přihlášení přes Google');
       }
     } finally {
       setLoading(false);
@@ -131,19 +133,20 @@ export default function AuthPage() {
         sessionStorage.setItem('userPassword', password);
         router.push('/dashboard');
       }
-    } catch (err: any) {
-      if (err.code === 'auth/email-already-in-use') {
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string };
+      if (error.code === 'auth/email-already-in-use') {
         setError('Tento email je již registrován');
-      } else if (err.code === 'auth/invalid-email') {
+      } else if (error.code === 'auth/invalid-email') {
         setError('Neplatný email');
-      } else if (err.code === 'auth/weak-password') {
+      } else if (error.code === 'auth/weak-password') {
         setError('Heslo je příliš slabé');
-      } else if (err.code === 'auth/user-not-found') {
+      } else if (error.code === 'auth/user-not-found') {
         setError('Uživatel nenalezen');
-      } else if (err.code === 'auth/wrong-password') {
+      } else if (error.code === 'auth/wrong-password') {
         setError('Nesprávné heslo');
       } else {
-        setError(err.message || 'Chyba při autentizaci');
+        setError(error.message || 'Chyba při autentizaci');
       }
     } finally {
       setLoading(false);

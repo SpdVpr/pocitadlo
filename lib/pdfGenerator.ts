@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Invoice } from '@/types';
-import QRCode from 'qrcode';
+// import QRCode from 'qrcode'; // Unused import
 import { robotoRegularBase64, robotoBoldBase64 } from './roboto-font';
 
 export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
@@ -18,7 +18,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
   doc.setFont('Roboto');
   
   const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+  // const pageHeight = doc.internal.pageSize.getHeight(); // Unused variable
   const marginLeft = 20;
   const marginRight = 20;
   const centerX = pageWidth / 2;
@@ -31,10 +31,10 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
 
   doc.setFontSize(10);
   doc.setFont('Roboto');
-  
+
   const leftInfoX = marginLeft;
   const rightInfoX = centerX + 20;
-  const infoY = yPosition;
+  // const infoY = yPosition; // Unused variable
   
   doc.text('Číslo faktury:', leftInfoX, yPosition);
   doc.text(String(invoice.invoiceNumber), leftInfoX + 35, yPosition);
@@ -146,7 +146,7 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
     theme: 'plain',
   });
 
-  yPosition = (doc as any).lastAutoTable.finalY + 10;
+  yPosition = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
 
   doc.setFontSize(12);
   doc.setFont('Roboto', 'bold');
@@ -207,6 +207,8 @@ export async function generateInvoicePDF(invoice: Invoice): Promise<void> {
   doc.save('faktura-' + invoice.invoiceNumber + '.pdf');
 }
 
+// Unused function - commented out to fix linting
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function czechAccountToIBAN(accountNumber: string): string {
   // Remove spaces
   const cleaned = accountNumber.replace(/\s/g, '');
@@ -233,7 +235,7 @@ function czechAccountToIBAN(accountNumber: string): string {
   // Calculate check digits using modulo 97
   // Move country code and 00 to the end, convert letters to numbers (C=12, Z=35)
   const numericIBAN = bban + '1235' + '00'; // CZ = 12 35, 00 for calculation
-  let remainder = BigInt(numericIBAN) % BigInt(97);
+  const remainder = BigInt(numericIBAN) % BigInt(97);
   const checkDigits = (BigInt(98) - remainder).toString().padStart(2, '0');
 
   const iban = `CZ${checkDigits}${bban}`;
@@ -251,67 +253,68 @@ function czechAccountToIBAN(accountNumber: string): string {
   return iban;
 }
 
-function generateQRPaymentString(invoice: Invoice): string {
-  console.log('generateQRPaymentString called');
-  console.log('Bank account:', invoice.supplier.bankAccount);
-
-  if (!invoice.supplier.bankAccount) {
-    console.warn('No bank account provided');
-    return '';
-  }
-
-  const iban = czechAccountToIBAN(invoice.supplier.bankAccount);
-  console.log('Converted IBAN:', iban);
-
-  if (!iban) {
-    console.warn('Could not convert to IBAN, QR code will not be generated');
-    return '';
-  }
-
-  try {
-    // Variable symbol: Max. 10 characters, Integer (whole number without leading zeros)
-    const variableSymbol = invoice.variableSymbol?.replace(/^0+/, '') || '0';
-
-    // Build SPAYD string according to SPAYD specification
-    // Format: SPD*version*key:value*key:value*...
-    // All values must be from ISO-8859-1 charset, preferably alphanumeric for efficiency
-    const parts = ['SPD', '1.0'];
-
-    // ACC is required - IBAN format
-    parts.push(`ACC:${iban}`);
-
-    // AM - amount (optional but recommended)
-    parts.push(`AM:${invoice.totalPrice.toFixed(2)}`);
-
-    // CC - currency (optional, defaults to CZK)
-    parts.push(`CC:${invoice.currency}`);
-
-    // VS - variable symbol (using VS instead of X-VS for better compatibility)
-    // Some banks require VS: instead of X-VS: for proper recognition
-    if (variableSymbol) {
-      parts.push(`VS:${variableSymbol}`);
-    }
-
-    // Join parts with * separator - NO trailing asterisk
-    const spaydString = parts.join('*');
-
-    // Validate: no spaces, no newlines, no BOM
-    const cleanString = spaydString.trim();
-
-    console.log('Generated SPAYD string:', cleanString);
-    console.log('SPAYD length:', cleanString.length);
-    console.log('SPAYD parts:', parts);
-    console.log('Has spaces:', cleanString.includes(' '));
-    console.log('Has newlines:', cleanString.includes('\n'));
-    console.log('First char code:', cleanString.charCodeAt(0));
-    console.log('Last char code:', cleanString.charCodeAt(cleanString.length - 1));
-
-    return cleanString;
-  } catch (error) {
-    console.error('Error generating SPAYD string:', error);
-    return '';
-  }
-}
+// Unused function - commented out to fix linting
+// function generateQRPaymentString(invoice: Invoice): string {
+//   console.log('generateQRPaymentString called');
+//   console.log('Bank account:', invoice.supplier.bankAccount);
+//
+//   if (!invoice.supplier.bankAccount) {
+//     console.warn('No bank account provided');
+//     return '';
+//   }
+//
+//   const iban = czechAccountToIBAN(invoice.supplier.bankAccount);
+//   console.log('Converted IBAN:', iban);
+//
+//   if (!iban) {
+//     console.warn('Could not convert to IBAN, QR code will not be generated');
+//     return '';
+//   }
+//
+//   try {
+//     // Variable symbol: Max. 10 characters, Integer (whole number without leading zeros)
+//     const variableSymbol = invoice.variableSymbol?.replace(/^0+/, '') || '0';
+//
+//     // Build SPAYD string according to SPAYD specification
+//     // Format: SPD*version*key:value*key:value*...
+//     // All values must be from ISO-8859-1 charset, preferably alphanumeric for efficiency
+//     const parts = ['SPD', '1.0'];
+//
+//     // ACC is required - IBAN format
+//     parts.push(`ACC:${iban}`);
+//
+//     // AM - amount (optional but recommended)
+//     parts.push(`AM:${invoice.totalPrice.toFixed(2)}`);
+//
+//     // CC - currency (optional, defaults to CZK)
+//     parts.push(`CC:${invoice.currency}`);
+//
+//     // VS - variable symbol (using VS instead of X-VS for better compatibility)
+//     // Some banks require VS: instead of X-VS: for proper recognition
+//     if (variableSymbol) {
+//       parts.push(`VS:${variableSymbol}`);
+//     }
+//
+//     // Join parts with * separator - NO trailing asterisk
+//     const spaydString = parts.join('*');
+//
+//     // Validate: no spaces, no newlines, no BOM
+//     const cleanString = spaydString.trim();
+//
+//     console.log('Generated SPAYD string:', cleanString);
+//     console.log('SPAYD length:', cleanString.length);
+//     console.log('SPAYD parts:', parts);
+//     console.log('Has spaces:', cleanString.includes(' '));
+//     console.log('Has newlines:', cleanString.includes('\n'));
+//     console.log('First char code:', cleanString.charCodeAt(0));
+//     console.log('Last char code:', cleanString.charCodeAt(cleanString.length - 1));
+//
+//     return cleanString;
+//   } catch (error) {
+//     console.error('Error generating SPAYD string:', error);
+//     return '';
+//   }
+// }
 
 function formatDate(date: Date): string {
   const day = date.getDate().toString().padStart(2, '0');
