@@ -284,16 +284,16 @@ export async function deleteTimeEntry(id: string, projectId: string, duration: n
   await updateProjectTotals(projectId, -duration, -price);
 }
 
-export async function setActiveTimer(projectId: string | null, startTime?: Date): Promise<void> {
-  const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, 'current');
+export async function setActiveTimer(userId: string, projectId: string | null, startTime?: Date): Promise<void> {
+  const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, userId);
   await setDoc(timerRef, {
     projectId,
     startTime: projectId ? (startTime ? Timestamp.fromDate(startTime) : Timestamp.now()) : null,
   });
 }
 
-export async function getActiveTimer(): Promise<ActiveTimer | null> {
-  const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, 'current');
+export async function getActiveTimer(userId: string): Promise<ActiveTimer | null> {
+  const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, userId);
   const timerSnap = await getDoc(timerRef);
   
   if (timerSnap.exists()) {
@@ -302,8 +302,8 @@ export async function getActiveTimer(): Promise<ActiveTimer | null> {
   return null;
 }
 
-export function subscribeToActiveTimer(callback: (timer: ActiveTimer | null) => void) {
-  const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, 'current');
+export function subscribeToActiveTimer(userId: string, callback: (timer: ActiveTimer | null) => void) {
+  const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, userId);
   
   return onSnapshot(
     timerRef,

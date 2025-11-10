@@ -38,7 +38,9 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
   }, [user]);
 
   useEffect(() => {
-    const unsubscribe = subscribeToActiveTimer((timer) => {
+    if (!user) return;
+
+    const unsubscribe = subscribeToActiveTimer(user.uid, (timer) => {
       if (timer && timer.projectId && timer.startTime) {
         const projectExists = projects.find(p => p.id === timer.projectId);
         if (projectExists) {
@@ -47,7 +49,7 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
           setStartTime(timer.startTime.toDate());
         } else {
           console.error('Timer started for non-existent project:', timer.projectId);
-          setActiveTimer(null);
+          setActiveTimer(user.uid, null);
         }
       } else if (timer && timer.projectId === null) {
         setIsRunning(false);
@@ -57,7 +59,7 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
     });
 
     return () => unsubscribe();
-  }, [onProjectSelect, projects]);
+  }, [onProjectSelect, projects, user]);
 
   useEffect(() => {
     if (!isRunning || !startTime) return;
@@ -84,7 +86,7 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
   }, [isRunning, elapsedSeconds, selectedProject]);
 
   const handleStart = async () => {
-    if (!selectedProjectId) {
+    if (!selectedProjectId || !user) {
       alert('Prosím vyberte projekt');
       return;
     }
@@ -94,7 +96,7 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
     setStartTime(startWithOffset);
     setIsRunning(true);
     setElapsedSeconds(timerStartOffset);
-    await setActiveTimer(selectedProjectId, startWithOffset);
+    await setActiveTimer(user.uid, selectedProjectId, startWithOffset);
   };
 
   const handleStop = async () => {
@@ -124,7 +126,7 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
         );
       }
 
-      await setActiveTimer(null);
+      await setActiveTimer(user.uid, null);
 
       setIsRunning(false);
       setElapsedSeconds(0);
