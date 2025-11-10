@@ -40,9 +40,15 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
   useEffect(() => {
     const unsubscribe = subscribeToActiveTimer((timer) => {
       if (timer && timer.projectId && timer.startTime) {
-        setIsRunning(true);
-        onProjectSelect(timer.projectId);
-        setStartTime(timer.startTime.toDate());
+        const projectExists = projects.find(p => p.id === timer.projectId);
+        if (projectExists) {
+          setIsRunning(true);
+          onProjectSelect(timer.projectId);
+          setStartTime(timer.startTime.toDate());
+        } else {
+          console.error('Timer started for non-existent project:', timer.projectId);
+          setActiveTimer(null);
+        }
       } else if (timer && timer.projectId === null) {
         setIsRunning(false);
         setStartTime(null);
@@ -51,7 +57,7 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
     });
 
     return () => unsubscribe();
-  }, [onProjectSelect]);
+  }, [onProjectSelect, projects]);
 
   useEffect(() => {
     if (!isRunning || !startTime) return;
@@ -99,27 +105,30 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
         user: !!user,
         encryptionKey: !!encryptionKey
       });
+      alert('Nelze zastavit časovač - chybí data projektu. Obnovte stránku a zkuste znovu.');
       return;
     }
 
-    setIsRunning(false);
-    setElapsedSeconds(0);
-    setStartTime(null);
+    const secondsToSave = elapsedSeconds;
 
     try {
-      await setActiveTimer(null);
-
-      if (elapsedSeconds > 0) {
+      if (secondsToSave > 0) {
         await createTimeEntry(
           user.uid,
           selectedProjectId,
-          elapsedSeconds,
+          secondsToSave,
           'timer',
           selectedProject.hourlyRate,
           selectedProject.currency || 'CZK',
           encryptionKey
         );
       }
+
+      await setActiveTimer(null);
+
+      setIsRunning(false);
+      setElapsedSeconds(0);
+      setStartTime(null);
     } catch (error) {
       console.error('Error stopping timer:', error);
       alert('Chyba při zastavení časovače. Čas nebyl uložen.');
