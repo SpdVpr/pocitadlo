@@ -59,7 +59,7 @@ function SortableProjectCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ 
+  } = useSortable({
     id: project.id,
   });
 
@@ -67,11 +67,10 @@ function SortableProjectCard({
     transform: CSS.Transform.toString(transform),
     transition: transition,
     opacity: isDragging ? 0.3 : 1,
-    cursor: 'grab',
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style}>
       <ProjectCard
         project={project}
         isSelected={isSelected}
