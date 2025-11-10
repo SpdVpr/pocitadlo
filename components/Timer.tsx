@@ -42,14 +42,22 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
 
     const unsubscribe = subscribeToActiveTimer(user.uid, (timer) => {
       if (timer && timer.projectId && timer.startTime) {
-        const projectExists = projects.find(p => p.id === timer.projectId);
-        if (projectExists) {
+        // Only check if project exists when projects are loaded
+        if (projects.length > 0) {
+          const projectExists = projects.find(p => p.id === timer.projectId);
+          if (projectExists) {
+            setIsRunning(true);
+            onProjectSelect(timer.projectId);
+            setStartTime(timer.startTime.toDate());
+          } else {
+            console.error('Timer started for non-existent project:', timer.projectId);
+            setActiveTimer(user.uid, null);
+          }
+        } else {
+          // Projects not loaded yet, just set the timer state
           setIsRunning(true);
           onProjectSelect(timer.projectId);
           setStartTime(timer.startTime.toDate());
-        } else {
-          console.error('Timer started for non-existent project:', timer.projectId);
-          setActiveTimer(user.uid, null);
         }
       } else if (timer && timer.projectId === null) {
         setIsRunning(false);
@@ -73,17 +81,7 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
     return () => clearInterval(interval);
   }, [isRunning, startTime]);
 
-  useEffect(() => {
-    if (isRunning && selectedProject) {
-      document.title = `${formatTime(elapsedSeconds)} - ${selectedProject.name}`;
-    } else {
-      document.title = 'EvidujCas.cz - Sledování odpracovaných hodin';
-    }
-
-    return () => {
-      document.title = 'EvidujCas.cz - Sledování odpracovaných hodin';
-    };
-  }, [isRunning, elapsedSeconds, selectedProject]);
+  // Document title is now handled by GlobalTimer component
 
   const handleStart = async () => {
     if (!selectedProjectId || !user) {

@@ -13,8 +13,9 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   }
   
   // Ostatní stránky mají omezení šířky a padding
+  // Přidáme extra padding na spodku pro GlobalTimer (když běží)
   return (
-    <main className="max-w-7xl mx-auto px-4 py-8">
+    <main className="max-w-7xl mx-auto px-4 py-8 pb-24">
       {children}
     </main>
   );

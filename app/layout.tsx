@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
+import GlobalTimer from "@/components/GlobalTimer";
 import { AuthProvider } from "@/lib/authContext";
 import { LayoutWrapper } from "@/components/LayoutWrapper";
 
@@ -104,6 +105,7 @@ export default function RootLayout({
           <LayoutWrapper>
             {children}
           </LayoutWrapper>
+          <GlobalTimer />
         </AuthProvider>
       </body>
     </html>

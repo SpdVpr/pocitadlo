@@ -7,8 +7,16 @@ export function formatTime(seconds: number): string {
 }
 
 export function formatHours(seconds: number): string {
-  const hours = seconds / 3600;
-  return hours.toFixed(2) + 'h';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (hours === 0) {
+    return `${minutes}m`;
+  } else if (minutes === 0) {
+    return `${hours}h`;
+  } else {
+    return `${hours}h ${minutes}m`;
+  }
 }
 
 export function formatPrice(amount: number, currency: 'CZK' | 'EUR' = 'CZK'): string {
