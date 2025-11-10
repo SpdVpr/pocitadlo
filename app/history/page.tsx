@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Project, TimeEntry } from '@/types';
 import { subscribeToProjects, subscribeToTimeEntries, deleteTimeEntry, resetMonthlyStats } from '@/lib/firestore';
 import { formatHours, formatPrice, getCurrentMonthYear, getMonthName } from '@/lib/utils';
@@ -91,17 +92,28 @@ function HistoryPageContent() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8"
+      >
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Historie záznamů</h1>
-        <button
+        <motion.button
           onClick={handleResetMonth}
+          whileHover={{ scale: 1.05, y: -2 }}
+          whileTap={{ scale: 0.95 }}
           className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors text-sm sm:text-base"
         >
           Vynulovat měsíc
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
-      <div className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6"
+      >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -170,9 +182,14 @@ function HistoryPageContent() {
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-lg overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-lg overflow-hidden"
+      >
         {filteredEntries.length === 0 ? (
           <div className="p-8 sm:p-12 text-center text-gray-500">
             <div className="text-4xl sm:text-6xl mb-3 sm:mb-4">📊</div>
@@ -264,7 +281,7 @@ function HistoryPageContent() {
             </table>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

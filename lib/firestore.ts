@@ -38,7 +38,14 @@ export async function createProject(
   encryptionKey: Uint8Array
 ): Promise<string> {
   const now = Timestamp.now();
-  // const { month, year } = getCurrentMonthYear(); // Unused variables
+
+  const q = query(
+    collection(db, COLLECTIONS.PROJECTS),
+    where('userId', '==', userId),
+    orderBy('order', 'desc')
+  );
+  const snapshot = await getDocs(q);
+  const maxOrder = snapshot.docs.length > 0 ? (snapshot.docs[0].data().order || 0) : 0;
 
   const projectData = {
     userId,
@@ -49,6 +56,7 @@ export async function createProject(
     totalTimeCurrentMonth: 0,
     totalPriceCurrentMonth: 0,
     isActive: true,
+    order: maxOrder + 1,
     createdAt: now,
     updatedAt: now,
   };
@@ -103,6 +111,7 @@ export function subscribeToProjects(
           ...data,
           name: decryptData(data.name, encryptionKey),
           hourlyRate: parseFloat(decryptData(data.hourlyRate, encryptionKey)),
+          order: data.order ?? 0,
         } as Project;
       } catch (error) {
         console.error('Error decrypting project:', error);
@@ -111,6 +120,7 @@ export function subscribeToProjects(
           ...data,
           name: '[Chyba při dešifrování]',
           hourlyRate: 0,
+          order: data.order ?? 0,
         } as Project;
       }
     });
@@ -119,7 +129,7 @@ export function subscribeToProjects(
       projects = projects.filter(p => p.isActive);
     }
 
-    projects.sort((a, b) => a.name.localeCompare(b.name));
+    projects.sort((a, b) => a.order - b.order);
 
     callback(projects);
   });
@@ -596,4 +606,16 @@ export async function resetProjectStats(projectId: string): Promise<void> {
 export async function deleteInvoice(invoiceId: string): Promise<void> {
   const invoiceRef = doc(db, COLLECTIONS.INVOICES, invoiceId);
   await deleteDoc(invoiceRef);
+}
+
+export async function updateProjectsOrder(projectOrders: { id: string; order: number }[]): Promise<void> {
+  const updates = projectOrders.map(({ id, order }) => {
+    const projectRef = doc(db, COLLECTIONS.PROJECTS, id);
+    return updateDoc(projectRef, {
+      order,
+      updatedAt: Timestamp.now(),
+    });
+  });
+
+  await Promise.all(updates);
 }

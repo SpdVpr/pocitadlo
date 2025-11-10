@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Project } from '@/types';
 import { subscribeToProjects, createProject, updateProject, deleteProject, getProjectInvoiceSettings, updateProjectInvoiceSettings } from '@/lib/firestore';
 import { formatHours, formatPrice } from '@/lib/utils';
@@ -143,20 +144,31 @@ function ProjectsPageContent() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8"
+      >
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Správa projektů</h1>
         {!isCreating && (
-          <button
+          <motion.button
             onClick={() => setIsCreating(true)}
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
             className="w-full sm:w-auto px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm sm:text-base"
           >
             + Nový projekt
-          </button>
+          </motion.button>
         )}
-      </div>
+      </motion.div>
 
       {isCreating && (
-        <div className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
+        <motion.div 
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8"
+        >
           <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">
             {editingProject ? 'Upravit projekt' : 'Nový projekt'}
           </h2>
@@ -321,11 +333,15 @@ function ProjectsPageContent() {
               </button>
             </div>
           </form>
-        </div>
+        </motion.div>
       )}
 
       <div className="space-y-6 sm:space-y-8">
-        <div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">Aktivní projekty</h2>
           {activeProjects.length === 0 ? (
             <div className="bg-gray-100 rounded-xl p-6 sm:p-8 text-center text-gray-500 text-sm sm:text-base">
@@ -333,9 +349,13 @@ function ProjectsPageContent() {
             </div>
           ) : (
             <div className="grid gap-3 sm:gap-4">
-              {activeProjects.map((project) => (
-                <div
+              {activeProjects.map((project, index) => (
+                <motion.div
                   key={project.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
+                  whileHover={{ scale: 1.01, x: 5 }}
                   className="bg-gray-100 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex flex-col gap-4">
@@ -372,19 +392,27 @@ function ProjectsPageContent() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
-        </div>
+        </motion.div>
 
         {archivedProjects.length > 0 && (
-          <div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">Archivované projekty</h2>
             <div className="grid gap-3 sm:gap-4">
-              {archivedProjects.map((project) => (
-                <div
+              {archivedProjects.map((project, index) => (
+                <motion.div
                   key={project.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + index * 0.05 }}
+                  whileHover={{ scale: 1.01, x: 5 }}
                   className="bg-gray-50 rounded-xl p-4 sm:p-6 opacity-75"
                 >
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
@@ -413,10 +441,10 @@ function ProjectsPageContent() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 

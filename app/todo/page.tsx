@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { TodoItem } from '@/types';
 import { subscribeToTodos, createTodo, updateTodo, deleteTodo } from '@/lib/firestore';
 import { useAuth } from '@/lib/authContext';
@@ -64,13 +65,23 @@ function TodoPageContent() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="mb-6 sm:mb-8">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6 sm:mb-8"
+      >
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">TODO List</h1>
         <p className="text-sm sm:text-base text-gray-600">Spravujte své úkoly</p>
-      </div>
+      </motion.div>
 
       {/* Add new todo form */}
-      <form onSubmit={handleAddTodo} className="mb-6 sm:mb-8">
+      <motion.form 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        onSubmit={handleAddTodo} 
+        className="mb-6 sm:mb-8"
+      >
         <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
@@ -86,20 +97,30 @@ function TodoPageContent() {
             Přidat
           </button>
         </div>
-      </form>
+      </motion.form>
 
       {/* Active todos */}
       {activeTodos.length > 0 && (
-        <div className="mb-6 sm:mb-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-6 sm:mb-8"
+        >
           <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">
             Aktivní úkoly ({activeTodos.length})
           </h2>
           <div className="space-y-2">
-            {activeTodos.map((todo) => (
-              <div
-                key={todo.id}
-                className="bg-white rounded-lg shadow p-3 sm:p-4 flex items-start sm:items-center gap-2 sm:gap-3"
-              >
+            <AnimatePresence>
+              {activeTodos.map((todo, index) => (
+                <motion.div
+                  key={todo.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-white rounded-lg shadow p-3 sm:p-4 flex items-start sm:items-center gap-2 sm:gap-3"
+                >
                 <input
                   type="checkbox"
                   checked={todo.completed}
@@ -150,24 +171,34 @@ function TodoPageContent() {
                     </div>
                   </>
                 )}
-              </div>
+              </motion.div>
             ))}
+            </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Completed todos */}
       {completedTodos.length > 0 && (
-        <div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
           <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">
             Dokončené úkoly ({completedTodos.length})
           </h2>
           <div className="space-y-2">
-            {completedTodos.map((todo) => (
-              <div
-                key={todo.id}
-                className="bg-gray-50 rounded-lg shadow p-3 sm:p-4 flex items-start sm:items-center gap-2 sm:gap-3 opacity-75"
-              >
+            <AnimatePresence>
+              {completedTodos.map((todo, index) => (
+                <motion.div
+                  key={todo.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-gray-50 rounded-lg shadow p-3 sm:p-4 flex items-start sm:items-center gap-2 sm:gap-3 opacity-75"
+                >
                 <input
                   type="checkbox"
                   checked={todo.completed}
@@ -181,17 +212,23 @@ function TodoPageContent() {
                 >
                   Smazat
                 </button>
-              </div>
+              </motion.div>
             ))}
+            </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {todos.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-center py-12 text-gray-500"
+        >
           <p className="text-lg">Zatím nemáte žádné úkoly.</p>
           <p>Začněte přidáním nového úkolu výše.</p>
-        </div>
+        </motion.div>
       )}
     </div>
   );

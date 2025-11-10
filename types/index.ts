@@ -12,6 +12,7 @@ export interface Project {
   totalTimeCurrentMonth: number;
   totalPriceCurrentMonth: number;
   isActive: boolean;
+  order: number;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

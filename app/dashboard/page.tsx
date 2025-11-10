@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Project, TimeEntry } from '@/types';
-import { subscribeToProjects, subscribeToDailyTimeEntries, resetProjectStats } from '@/lib/firestore';
+import { subscribeToProjects, subscribeToDailyTimeEntries, resetProjectStats, updateProjectsOrder } from '@/lib/firestore';
 import { getCurrentMonthYear, getMonthName, formatHours, formatPrice } from '@/lib/utils';
 import { useAuth } from '@/lib/authContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -81,6 +82,19 @@ function DashboardContent() {
     }
   };
 
+  const handleReorderProjects = async (reorderedProjects: Project[]) => {
+    const projectOrders = reorderedProjects.map((project, index) => ({
+      id: project.id,
+      order: index,
+    }));
+
+    try {
+      await updateProjectsOrder(projectOrders);
+    } catch (error) {
+      console.error('Error updating project order:', error);
+    }
+  };
+
   const totalStats = projects.reduce(
     (acc, project) => {
       const currency = project.currency || 'CZK';
@@ -125,8 +139,15 @@ function DashboardContent() {
         selectedProjectId={selectedProjectId}
       />
 
-      <div className="mb-4 sm:mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">Projekty</h2>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="mb-6 sm:mb-8"
+      >
+        <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4 sm:mb-6">
+          Projekty
+        </h2>
         <ProjectList
           projects={projects}
           selectedProjectId={selectedProjectId}
@@ -135,98 +156,171 @@ function DashboardContent() {
           onSubtractTime={handleSubtractTime}
           onCreateInvoice={handleCreateInvoice}
           onResetProject={handleResetProject}
+          onReorder={handleReorderProjects}
         />
-      </div>
+      </motion.div>
 
-      <div className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
-          <h3 className="text-lg sm:text-xl font-bold text-gray-800">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="relative overflow-hidden bg-gradient-to-br from-white to-gray-50 rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 mb-6 sm:mb-8 border border-gray-200"
+      >
+        <motion.div 
+          className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-purple-400 to-blue-400 rounded-full blur-3xl opacity-20"
+          animate={{ 
+            scale: [1, 1.2, 1],
+            rotate: [0, 90, 0]
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-6">
+          <h3 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             Statistiky za {getMonthName(month)} {year}
           </h3>
-          <a
+          <motion.a
             href="/projects"
-            className="w-full sm:w-auto text-center px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm sm:text-base"
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-full sm:w-auto text-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all text-sm sm:text-base"
           >
             Spravovat projekty
-          </a>
+          </motion.a>
         </div>
 
-        <div className="space-y-4">
+        <div className="relative space-y-4">
           {totalStats.CZK.totalHours > 0 && (
-            <div className="grid grid-cols-2 gap-4 sm:gap-6">
-              <div>
-                <p className="text-gray-500 text-xs sm:text-sm mb-1">Celkový počet hodin (CZK)</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="grid grid-cols-2 gap-4 sm:gap-6"
+            >
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="bg-white/50 backdrop-blur-sm rounded-2xl p-4 shadow-md"
+              >
+                <p className="text-gray-600 text-xs sm:text-sm mb-2 font-medium">Celkový počet hodin (CZK)</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
                   {formatHours(totalStats.CZK.totalHours)}
                 </p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs sm:text-sm mb-1">Celková částka (CZK)</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">
+              </motion.div>
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="bg-white/50 backdrop-blur-sm rounded-2xl p-4 shadow-md"
+              >
+                <p className="text-gray-600 text-xs sm:text-sm mb-2 font-medium">Celková částka (CZK)</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                   {formatPrice(totalStats.CZK.totalPrice, 'CZK')}
                 </p>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
           {totalStats.EUR.totalHours > 0 && (
-            <div className="grid grid-cols-2 gap-4 sm:gap-6">
-              <div>
-                <p className="text-gray-500 text-xs sm:text-sm mb-1">Celkový počet hodin (EUR)</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="grid grid-cols-2 gap-4 sm:gap-6"
+            >
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="bg-white/50 backdrop-blur-sm rounded-2xl p-4 shadow-md"
+              >
+                <p className="text-gray-600 text-xs sm:text-sm mb-2 font-medium">Celkový počet hodin (EUR)</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
                   {formatHours(totalStats.EUR.totalHours)}
                 </p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs sm:text-sm mb-1">Celková částka (EUR)</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">
+              </motion.div>
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="bg-white/50 backdrop-blur-sm rounded-2xl p-4 shadow-md"
+              >
+                <p className="text-gray-600 text-xs sm:text-sm mb-2 font-medium">Celková částka (EUR)</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                   {formatPrice(totalStats.EUR.totalPrice, 'EUR')}
                 </p>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
         </div>
-      </div>
+      </motion.div>
 
-      <div className="bg-purple-50 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
-        <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="relative overflow-hidden bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 border border-purple-200"
+      >
+        <motion.div 
+          className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-br from-pink-400 to-purple-400 rounded-full blur-3xl opacity-20"
+          animate={{ 
+            scale: [1, 1.3, 1],
+            rotate: [0, -90, 0]
+          }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        />
+        
+        <h3 className="relative text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-6">
           Denní statistiky
         </h3>
 
-        <div className="space-y-4">
+        <div className="relative space-y-4">
           {dailyStats.CZK.totalHours > 0 && (
-            <div className="grid grid-cols-2 gap-4 sm:gap-6">
-              <div>
-                <p className="text-gray-500 text-xs sm:text-sm mb-1">Počet hodin dnes (CZK)</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="grid grid-cols-2 gap-4 sm:gap-6"
+            >
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-md"
+              >
+                <p className="text-gray-600 text-xs sm:text-sm mb-2 font-medium">Počet hodin dnes (CZK)</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
                   {formatHours(dailyStats.CZK.totalHours)}
                 </p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs sm:text-sm mb-1">Částka dnes (CZK)</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600">
+              </motion.div>
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-md"
+              >
+                <p className="text-gray-600 text-xs sm:text-sm mb-2 font-medium">Částka dnes (CZK)</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                   {formatPrice(dailyStats.CZK.totalPrice, 'CZK')}
                 </p>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
           {dailyStats.EUR.totalHours > 0 && (
-            <div className="grid grid-cols-2 gap-4 sm:gap-6">
-              <div>
-                <p className="text-gray-500 text-xs sm:text-sm mb-1">Počet hodin dnes (EUR)</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="grid grid-cols-2 gap-4 sm:gap-6"
+            >
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-md"
+              >
+                <p className="text-gray-600 text-xs sm:text-sm mb-2 font-medium">Počet hodin dnes (EUR)</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
                   {formatHours(dailyStats.EUR.totalHours)}
                 </p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs sm:text-sm mb-1">Částka dnes (EUR)</p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600">
+              </motion.div>
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-md"
+              >
+                <p className="text-gray-600 text-xs sm:text-sm mb-2 font-medium">Částka dnes (EUR)</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                   {formatPrice(dailyStats.EUR.totalPrice, 'EUR')}
                 </p>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {dialogState.isOpen && dialogState.project && (
         <TimeAdjustDialog

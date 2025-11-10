@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/authContext';
 import Link from 'next/link';
 import Script from 'next/script';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
@@ -141,36 +142,66 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 md:pt-20 pb-8 sm:pb-12 md:pb-16" aria-labelledby="hero-heading">
         <div className="text-center">
-          <h1 id="hero-heading" className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6">
+          <motion.h1 
+            id="hero-heading" 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6"
+          >
             Sledujte své odpracované hodiny
             <span className="block text-purple-600">
               jednoduše a bezpečně
             </span>
-          </h1>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto px-4"
+          >
             Moderní aplikace pro evidenci pracovní doby s end-to-end šifrováním.
             Vaše data vidíte pouze vy.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4" role="group" aria-label="Hlavní akce">
-            <Link
-              href="/auth"
-              className="px-6 sm:px-8 py-3 sm:py-4 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-lg hover:shadow-xl text-base sm:text-lg"
-              aria-label="Začít používat aplikaci zdarma"
+          </motion.p>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4" 
+            role="group" 
+            aria-label="Hlavní akce"
+          >
+            <motion.div
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
             >
-              Začít zdarma
-            </Link>
-            <a
+              <Link
+                href="/auth"
+                className="block px-6 sm:px-8 py-3 sm:py-4 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-lg hover:shadow-xl text-base sm:text-lg"
+                aria-label="Začít používat aplikaci zdarma"
+              >
+                Začít zdarma
+              </Link>
+            </motion.div>
+            <motion.a
               href="#features"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
               className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-purple-600 rounded-xl font-semibold hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl text-base sm:text-lg border-2 border-purple-600"
               aria-label="Zjistit více o funkcích aplikace"
             >
               Zjistit více
-            </a>
-          </div>
+            </motion.a>
+          </motion.div>
         </div>
 
         {/* Hero Image */}
-        <div className="mt-8 sm:mt-12 md:mt-16 relative px-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="mt-8 sm:mt-12 md:mt-16 relative px-4"
+        >
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-2 sm:p-4 max-w-5xl mx-auto border border-purple-100">
             <Image
               src="/front-image.png"
@@ -182,23 +213,37 @@ export default function LandingPage() {
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
             />
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Features Section */}
       <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20" aria-labelledby="features-heading">
-        <header className="text-center mb-8 sm:mb-12 md:mb-16">
+        <motion.header 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-8 sm:mb-12 md:mb-16"
+        >
           <h2 id="features-heading" className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
             Vše, co potřebujete pro evidenci času
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600">
             Jednoduché, bezpečné a efektivní
           </p>
-        </header>
+        </motion.header>
 
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8" role="list">
           {/* Feature 1 */}
-          <article className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" role="listitem">
+          <motion.article 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" 
+            role="listitem"
+          >
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
               <span className="text-xl sm:text-2xl">⏱️</span>
             </div>
@@ -208,10 +253,18 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base text-gray-600">
               Spusťte časovač jedním kliknutím a sledujte odpracovaný čas na jednotlivých projektech.
             </p>
-          </article>
+          </motion.article>
 
           {/* Feature 2 */}
-          <article className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" role="listitem">
+          <motion.article 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" 
+            role="listitem"
+          >
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
               <span className="text-xl sm:text-2xl">📊</span>
             </div>
@@ -221,10 +274,18 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base text-gray-600">
               Měsíční a denní přehledy odpracovaných hodin a vydělaných částek pro každý projekt.
             </p>
-          </article>
+          </motion.article>
 
           {/* Feature 3 */}
-          <article className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" role="listitem">
+          <motion.article 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" 
+            role="listitem"
+          >
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
               <span className="text-xl sm:text-2xl">🔒</span>
             </div>
@@ -234,10 +295,18 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base text-gray-600">
               Vaše citlivá data jsou šifrována na vašem zařízení. Nikdo jiný je nemůže přečíst.
             </p>
-          </article>
+          </motion.article>
 
           {/* Feature 4 */}
-          <article className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" role="listitem">
+          <motion.article 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" 
+            role="listitem"
+          >
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
               <span className="text-xl sm:text-2xl">💼</span>
             </div>
@@ -247,10 +316,18 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base text-gray-600">
               Vytvářejte projekty s hodinovou sazbou, barvami a poznámkami. Vše přehledně na jednom místě.
             </p>
-          </article>
+          </motion.article>
 
           {/* Feature 5 */}
-          <article className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" role="listitem">
+          <motion.article 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" 
+            role="listitem"
+          >
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
               <span className="text-xl sm:text-2xl">📱</span>
             </div>
@@ -260,10 +337,18 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base text-gray-600">
               Funguje perfektně na počítači, tabletu i mobilu. Evidujte čas odkudkoliv.
             </p>
-          </article>
+          </motion.article>
 
           {/* Feature 6 */}
-          <article className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" role="listitem">
+          <motion.article 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100" 
+            role="listitem"
+          >
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
               <span className="text-xl sm:text-2xl">📄</span>
             </div>
@@ -273,15 +358,30 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base text-gray-600">
               Generujte profesionální faktury s QR platbou přímo z odpracovaných hodin na projektech.
             </p>
-          </article>
+          </motion.article>
         </div>
       </section>
 
       {/* Security Section */}
       <section className="bg-purple-600 py-12 sm:py-16 md:py-20" aria-labelledby="security-heading">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center text-white">
-            <div className="text-3xl sm:text-4xl md:text-5xl mb-4 sm:mb-6" aria-hidden="true">🔐</div>
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="text-center text-white"
+          >
+            <motion.div 
+              initial={{ scale: 0.5, opacity: 0 }}
+              whileInView={{ scale: 1, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-3xl sm:text-4xl md:text-5xl mb-4 sm:mb-6" 
+              aria-hidden="true"
+            >
+              🔐
+            </motion.div>
             <h2 id="security-heading" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
               Vaše soukromí je naše priorita
             </h2>
@@ -325,27 +425,38 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20" aria-labelledby="cta-heading">
-        <div className="bg-purple-50 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 text-center border border-purple-200">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+          className="bg-purple-50 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 text-center border border-purple-200"
+        >
           <h2 id="cta-heading" className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
             Připraveni začít?
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8">
             Registrace je zdarma a trvá méně než minutu
           </p>
-          <Link
-            href="/auth"
-            className="inline-block px-6 sm:px-8 py-3 sm:py-4 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-lg hover:shadow-xl text-base sm:text-lg"
-            aria-label="Vytvořit účet zdarma a začít evidovat čas"
+          <motion.div
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
           >
-            Vytvořit účet zdarma
-          </Link>
-        </div>
+            <Link
+              href="/auth"
+              className="inline-block px-6 sm:px-8 py-3 sm:py-4 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-lg hover:shadow-xl text-base sm:text-lg"
+              aria-label="Vytvořit účet zdarma a začít evidovat čas"
+            >
+              Vytvořit účet zdarma
+            </Link>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* Footer */}

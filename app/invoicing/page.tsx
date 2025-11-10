@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/authContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { getInvoiceSettings, updateInvoiceSettings, subscribeToInvoices, deleteInvoice } from '@/lib/firestore';
@@ -134,12 +135,21 @@ function InvoicingContent() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6"
+      >
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Fakturace</h1>
         <p className="text-gray-600">Správa fakturačních údajů a vystavených faktur</p>
-      </div>
+      </motion.div>
 
-      <div className="bg-white rounded-2xl shadow-lg mb-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white rounded-2xl shadow-lg mb-6"
+      >
         <div className="flex border-b border-gray-200">
           <button
             onClick={() => setActiveTab('settings')}
@@ -367,9 +377,13 @@ function InvoicingContent() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {invoices.map((invoice) => (
-                    <div
+                  {invoices.map((invoice, index) => (
+                    <motion.div
                       key={invoice.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      whileHover={{ scale: 1.01, x: 5 }}
                       className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors"
                     >
                       <div className="flex items-center justify-between">
@@ -415,14 +429,14 @@ function InvoicingContent() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               )}
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
