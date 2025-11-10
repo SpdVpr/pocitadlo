@@ -10,15 +10,18 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !user) {
+      console.log('[PROTECTED_ROUTE] No user, redirecting to auth');
       router.push('/auth');
     }
 
     // If user is logged in but no encryption key after loading, redirect to login
     if (!loading && user && !encryptionKey) {
+      console.log('[PROTECTED_ROUTE] User logged in but no encryption key, waiting 2 seconds...');
       // Wait a bit for key derivation
       const timeout = setTimeout(() => {
         if (!encryptionKey) {
           // Key derivation failed, redirect to login
+          console.log('[PROTECTED_ROUTE] Still no encryption key after 2 seconds, redirecting to auth');
           router.push('/auth');
         }
       }, 2000);

@@ -16,28 +16,35 @@ import { useAuth } from '@/lib/authContext';
 
 export default function AuthPage() {
   const router = useRouter();
-  const { user, setEncryptionKey } = useAuth();
+  const { user, encryptionKey, setEncryptionKey } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isProcessingRedirect, setIsProcessingRedirect] = useState(false);
 
   // Check for redirect result on mount
   useEffect(() => {
     const handleRedirectResult = async () => {
+      setIsProcessingRedirect(true);
       try {
         const result = await getRedirectResult(auth);
         if (result) {
+          console.log('[AUTH] Google redirect result received, deriving encryption key...');
           // User successfully signed in with redirect
           const encryptionKey = await deriveAndSetEncryptionKey(result.user.uid, result.user.uid);
           setEncryptionKey(encryptionKey);
           localStorage.setItem('encryptionKeyType', 'google');
+          console.log('[AUTH] Encryption key set, redirecting to dashboard...');
           router.push('/dashboard');
+        } else {
+          console.log('[AUTH] No redirect result found');
         }
       } catch (err: unknown) {
         const error = err as { code?: string; message?: string };
+        console.error('[AUTH] Error handling redirect result:', error);
         if (error.code === 'auth/popup-closed-by-user') {
           setError('Přihlášení bylo zrušeno');
         } else if (error.code === 'auth/cancelled-popup-request') {
@@ -45,18 +52,21 @@ export default function AuthPage() {
         } else {
           setError(error.message || 'Chyba při přihlášení přes Google');
         }
+      } finally {
+        setIsProcessingRedirect(false);
       }
     };
 
     handleRedirectResult();
   }, [router, setEncryptionKey]);
 
-  // Redirect if already logged in
+  // Redirect if already logged in (but only after redirect processing is done)
   useEffect(() => {
-    if (user) {
+    if (user && encryptionKey && !isProcessingRedirect) {
+      console.log('[AUTH] User already logged in with encryption key, redirecting to dashboard...');
       router.push('/dashboard');
     }
-  }, [user, router]);
+  }, [user, encryptionKey, isProcessingRedirect, router]);
 
   const handleGoogleSignIn = async () => {
     setError('');
