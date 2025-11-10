@@ -35,7 +35,7 @@ export default function ProjectCard({
           : 'border-gray-200 hover:border-blue-300 hover:shadow-lg'
       }`}
     >
-      
+
       <div className="relative flex items-start justify-between mb-3 sm:mb-4">
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
           <motion.div

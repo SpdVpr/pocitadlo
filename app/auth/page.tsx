@@ -28,15 +28,15 @@ export default function AuthPage() {
   // Check for redirect result on mount
   useEffect(() => {
     const handleRedirectResult = async () => {
-      setIsProcessingRedirect(true);
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          console.log('[AUTH] Google redirect result received');
+          console.log('[AUTH] Google redirect result received, user:', result.user.uid);
           // Set the key type so authContext knows how to derive the key
           localStorage.setItem('encryptionKeyType', 'google');
-          console.log('[AUTH] Marked as Google user, authContext will derive encryption key');
-          // Don't redirect here - let the useEffect below handle it once encryptionKey is set
+          console.log('[AUTH] Marked as Google user, waiting for authContext to derive encryption key...');
+          setIsProcessingRedirect(true);
+          // The useEffect below will redirect once encryptionKey is set by authContext
         } else {
           console.log('[AUTH] No redirect result found');
         }
@@ -50,21 +50,28 @@ export default function AuthPage() {
         } else {
           setError(error.message || 'Chyba při přihlášení přes Google');
         }
-      } finally {
         setIsProcessingRedirect(false);
       }
     };
 
     handleRedirectResult();
-  }, [router]);
+  }, []);
 
-  // Redirect if already logged in (but only after redirect processing is done)
+  // Redirect if already logged in with encryption key
   useEffect(() => {
-    if (user && encryptionKey && !isProcessingRedirect) {
-      console.log('[AUTH] User already logged in with encryption key, redirecting to dashboard...');
+    if (user && encryptionKey) {
+      console.log('[AUTH] User logged in with encryption key, redirecting to dashboard...');
       router.push('/dashboard');
     }
-  }, [user, encryptionKey, isProcessingRedirect, router]);
+  }, [user, encryptionKey, router]);
+
+  // Clear isProcessingRedirect flag once encryption key is set
+  useEffect(() => {
+    if (isProcessingRedirect && encryptionKey) {
+      console.log('[AUTH] Encryption key received from authContext, clearing processing flag');
+      setIsProcessingRedirect(false);
+    }
+  }, [isProcessingRedirect, encryptionKey]);
 
   const handleGoogleSignIn = async () => {
     setError('');

@@ -70,7 +70,7 @@ function SortableProjectCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <ProjectCard
         project={project}
         isSelected={isSelected}
@@ -105,7 +105,12 @@ export default function ProjectList({
   }, [projects, isDragging]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        delay: 250, // 250ms delay before drag starts
+        tolerance: 5, // 5px movement tolerance
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
