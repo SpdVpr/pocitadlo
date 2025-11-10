@@ -84,12 +84,14 @@ export default function AuthPage() {
       } else {
         // Use popup for desktop
         console.log('[AUTH] Using popup for desktop');
-        await signInWithPopup(auth, provider);
+        const userCredential = await signInWithPopup(auth, provider);
 
-        // Set the key type so authContext knows how to derive the key
+        // For desktop, derive key immediately and redirect
+        const encryptionKey = await deriveAndSetEncryptionKey(userCredential.user.uid, userCredential.user.uid);
+        setEncryptionKey(encryptionKey);
         localStorage.setItem('encryptionKeyType', 'google');
-        console.log('[AUTH] Marked as Google user, authContext will derive encryption key');
-        // The useEffect below will redirect once encryptionKey is set by authContext
+        console.log('[AUTH] Encryption key set for desktop, redirecting to dashboard');
+        router.push('/dashboard');
       }
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string };
