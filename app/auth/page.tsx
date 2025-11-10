@@ -29,20 +29,25 @@ export default function AuthPage() {
   useEffect(() => {
     const handleRedirectResult = async () => {
       try {
+        console.log('[AUTH] Checking for redirect result...');
         const result = await getRedirectResult(auth);
         if (result) {
-          console.log('[AUTH] Google redirect result received, user:', result.user.uid);
-          // Set the key type so authContext knows how to derive the key
+          console.log('[AUTH] ✅ Google redirect result received, user:', result.user.uid);
+          console.log('[AUTH] Deriving encryption key for mobile user...');
+
+          // Derive key immediately for mobile, same as desktop
+          const encryptionKey = await deriveAndSetEncryptionKey(result.user.uid, result.user.uid);
+          setEncryptionKey(encryptionKey);
           localStorage.setItem('encryptionKeyType', 'google');
-          console.log('[AUTH] Marked as Google user, waiting for authContext to derive encryption key...');
-          setIsProcessingRedirect(true);
-          // The useEffect below will redirect once encryptionKey is set by authContext
+
+          console.log('[AUTH] ✅ Encryption key set for mobile, redirecting to dashboard');
+          router.push('/dashboard');
         } else {
-          console.log('[AUTH] No redirect result found');
+          console.log('[AUTH] No redirect result found (normal page load)');
         }
       } catch (err: unknown) {
         const error = err as { code?: string; message?: string };
-        console.error('[AUTH] Error handling redirect result:', error);
+        console.error('[AUTH] ❌ Error handling redirect result:', error);
         if (error.code === 'auth/popup-closed-by-user') {
           setError('Přihlášení bylo zrušeno');
         } else if (error.code === 'auth/cancelled-popup-request') {
@@ -50,28 +55,19 @@ export default function AuthPage() {
         } else {
           setError(error.message || 'Chyba při přihlášení přes Google');
         }
-        setIsProcessingRedirect(false);
       }
     };
 
     handleRedirectResult();
-  }, []);
+  }, [router, setEncryptionKey]);
 
   // Redirect if already logged in with encryption key
   useEffect(() => {
-    if (user && encryptionKey) {
-      console.log('[AUTH] User logged in with encryption key, redirecting to dashboard...');
+    if (user && encryptionKey && !isProcessingRedirect) {
+      console.log('[AUTH] User already logged in with encryption key, redirecting to dashboard...');
       router.push('/dashboard');
     }
-  }, [user, encryptionKey, router]);
-
-  // Clear isProcessingRedirect flag once encryption key is set
-  useEffect(() => {
-    if (isProcessingRedirect && encryptionKey) {
-      console.log('[AUTH] Encryption key received from authContext, clearing processing flag');
-      setIsProcessingRedirect(false);
-    }
-  }, [isProcessingRedirect, encryptionKey]);
+  }, [user, encryptionKey, isProcessingRedirect, router]);
 
   const handleGoogleSignIn = async () => {
     setError('');

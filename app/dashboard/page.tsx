@@ -139,15 +139,23 @@ function DashboardContent() {
         selectedProjectId={selectedProjectId}
       />
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
         className="mb-6 sm:mb-8"
       >
-        <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4 sm:mb-6">
-          Projekty
-        </h2>
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+            Projekty
+          </h2>
+          <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
+              <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <span>Podržte kartu pro změnu pořadí</span>
+          </div>
+        </div>
         <ProjectList
           projects={projects}
           selectedProjectId={selectedProjectId}
