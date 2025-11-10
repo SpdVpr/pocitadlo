@@ -32,13 +32,11 @@ export default function AuthPage() {
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          console.log('[AUTH] Google redirect result received, deriving encryption key...');
-          // User successfully signed in with redirect
-          const encryptionKey = await deriveAndSetEncryptionKey(result.user.uid, result.user.uid);
-          setEncryptionKey(encryptionKey);
+          console.log('[AUTH] Google redirect result received');
+          // Set the key type so authContext knows how to derive the key
           localStorage.setItem('encryptionKeyType', 'google');
-          console.log('[AUTH] Encryption key set, redirecting to dashboard...');
-          router.push('/dashboard');
+          console.log('[AUTH] Marked as Google user, authContext will derive encryption key');
+          // Don't redirect here - let the useEffect below handle it once encryptionKey is set
         } else {
           console.log('[AUTH] No redirect result found');
         }
@@ -58,7 +56,7 @@ export default function AuthPage() {
     };
 
     handleRedirectResult();
-  }, [router, setEncryptionKey]);
+  }, [router]);
 
   // Redirect if already logged in (but only after redirect processing is done)
   useEffect(() => {
@@ -80,18 +78,18 @@ export default function AuthPage() {
 
       if (isMobile) {
         // Use redirect for mobile devices to avoid WebView issues
+        console.log('[AUTH] Using redirect for mobile');
         await signInWithRedirect(auth, provider);
         // Note: The redirect result will be handled in the useEffect hook above
       } else {
         // Use popup for desktop
-        const userCredential = await signInWithPopup(auth, provider);
+        console.log('[AUTH] Using popup for desktop');
+        await signInWithPopup(auth, provider);
 
-        // Pro Google přihlášení použijeme UID jako heslo pro derivaci klíče
-        // Toto je bezpečné, protože UID je jedinečný a známý pouze po přihlášení
-        const encryptionKey = await deriveAndSetEncryptionKey(userCredential.user.uid, userCredential.user.uid);
-        setEncryptionKey(encryptionKey);
+        // Set the key type so authContext knows how to derive the key
         localStorage.setItem('encryptionKeyType', 'google');
-        router.push('/dashboard');
+        console.log('[AUTH] Marked as Google user, authContext will derive encryption key');
+        // The useEffect below will redirect once encryptionKey is set by authContext
       }
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string };
