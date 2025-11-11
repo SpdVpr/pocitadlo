@@ -84,7 +84,10 @@ export default function AuthPage() {
       addDebugLog(`[AUTH] Starting Google sign in, isMobile: ${isMobile}`);
       addDebugLog(`[AUTH] Current URL: ${window.location.href}`);
 
-      if (isMobile) {
+      // TEMPORARY: Force popup for testing on mobile
+      const usePopup = true; // Change back to !isMobile after testing
+
+      if (!usePopup) {
         // Use redirect for mobile devices to avoid WebView issues
         addDebugLog('[AUTH] Using signInWithRedirect for mobile');
         addDebugLog(`[AUTH] Auth domain: ${auth.config.authDomain}`);
