@@ -31,6 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setEncryptionKey(null);
         setLoading(false);
       } else {
+        console.log('[AUTH_CONTEXT] Current encryptionKey state:', encryptionKey ? 'EXISTS' : 'NULL');
+        
         // Check if this is a Google user (providerData contains google.com)
         const isGoogleUser = currentUser.providerData.some(
           provider => provider.providerId === 'google.com'
@@ -40,13 +42,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isGoogleUser) {
           // Derive key from UID for Google users (always, regardless of localStorage)
           console.log('[AUTH_CONTEXT] Deriving encryption key from UID for Google user...');
-          const key = await deriveKeyFromPassword(currentUser.uid, currentUser.uid);
-          setEncryptionKey(key);
-          localStorage.setItem('encryptionKeyType', 'google');
-          console.log('[AUTH_CONTEXT] Encryption key derived and set');
+          try {
+            const key = await deriveKeyFromPassword(currentUser.uid, currentUser.uid);
+            console.log('[AUTH_CONTEXT] Key derived successfully, length:', key.length);
+            setEncryptionKey(key);
+            try {
+              localStorage.setItem('encryptionKeyType', 'google');
+              console.log('[AUTH_CONTEXT] localStorage.setItem successful');
+            } catch (storageError) {
+              console.error('[AUTH_CONTEXT] localStorage not available:', storageError);
+            }
+            console.log('[AUTH_CONTEXT] ✅ Encryption key SET');
+          } catch (error) {
+            console.error('[AUTH_CONTEXT] ❌ Failed to derive encryption key:', error);
+          }
         } else {
           // Check if we need to derive encryption key for email/password users
-          const storedKeyType = localStorage.getItem('encryptionKeyType');
+          let storedKeyType = null;
+          try {
+            storedKeyType = localStorage.getItem('encryptionKeyType');
+          } catch (e) {
+            console.error('[AUTH_CONTEXT] localStorage.getItem failed:', e);
+          }
           console.log('[AUTH_CONTEXT] User logged in, storedKeyType:', storedKeyType);
 
           if (storedKeyType === 'password') {
@@ -64,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
+        console.log('[AUTH_CONTEXT] Setting loading to false');
         setLoading(false);
       }
     });

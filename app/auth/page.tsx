@@ -25,8 +25,9 @@ export default function AuthPage() {
 
   // Redirect if already logged in with encryption key
   useEffect(() => {
+    console.log('[AUTH_PAGE] Check - user:', !!user, 'encryptionKey:', !!encryptionKey);
     if (user && encryptionKey) {
-      console.log('[AUTH] User already logged in with encryption key, redirecting to dashboard...');
+      console.log('[AUTH_PAGE] ✅ User + encryptionKey ready, redirecting to dashboard...');
       router.push('/dashboard');
     }
   }, [user, encryptionKey, router]);
