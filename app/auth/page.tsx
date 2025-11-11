@@ -7,6 +7,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -22,6 +23,30 @@ export default function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [processingRedirect, setProcessingRedirect] = useState(false);
+
+  // Check for redirect result on page load
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        console.log('[AUTH_PAGE] Checking for redirect result...');
+        setProcessingRedirect(true);
+        const result = await getRedirectResult(auth);
+        if (result) {
+          console.log('[AUTH_PAGE] ✅ Redirect result found:', result.user.uid);
+          // Don't do anything - let authContext handle it via onAuthStateChanged
+          // Keep processingRedirect true until redirect happens
+        } else {
+          console.log('[AUTH_PAGE] No redirect result (normal page load)');
+          setProcessingRedirect(false);
+        }
+      } catch (error) {
+        console.error('[AUTH_PAGE] Error checking redirect result:', error);
+        setProcessingRedirect(false);
+      }
+    };
+    checkRedirect();
+  }, []);
 
   // Redirect if already logged in with encryption key
   useEffect(() => {
@@ -38,15 +63,23 @@ export default function AuthPage() {
 
     try {
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
 
       // Detect if mobile device
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
+      console.log('[AUTH] Starting Google sign in, isMobile:', isMobile);
+      console.log('[AUTH] Current URL:', window.location.href);
+
       if (isMobile) {
         // Use redirect for mobile devices to avoid WebView issues
-        console.log('[AUTH] Using redirect for mobile');
+        console.log('[AUTH] Using signInWithRedirect for mobile');
+        console.log('[AUTH] Auth domain:', auth.config.authDomain);
         await signInWithRedirect(auth, provider);
-        // Note: The redirect result will be handled in the useEffect hook above
+        console.log('[AUTH] signInWithRedirect called - should redirect now');
+        // Note: onAuthStateChanged in authContext will handle the result
       } else {
         // Use popup for desktop
         console.log('[AUTH] Using popup for desktop');
@@ -61,10 +94,13 @@ export default function AuthPage() {
       }
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string };
+      console.error('[AUTH] Google sign-in error:', error);
       if (error.code === 'auth/popup-closed-by-user') {
         setError('Přihlášení bylo zrušeno');
       } else if (error.code === 'auth/cancelled-popup-request') {
         // Ignorovat - uživatel zavřel popup
+      } else if (error.code === 'auth/unauthorized-domain') {
+        setError('Tato doména není autorizována pro Google přihlášení. Kontaktujte správce.');
       } else {
         setError(error.message || 'Chyba při přihlášení přes Google');
       }
@@ -138,6 +174,15 @@ export default function AuthPage() {
         <p className="text-sm sm:text-base text-gray-600 text-center mb-6 sm:mb-8">
           {isLogin ? 'Přihlášení' : 'Registrace'}
         </p>
+
+        {processingRedirect && (
+          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg mb-4 sm:mb-6 text-sm sm:text-base">
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700"></div>
+              Dokončování Google přihlášení...
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg mb-4 sm:mb-6 text-sm sm:text-base">
