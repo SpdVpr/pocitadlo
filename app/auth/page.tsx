@@ -7,7 +7,6 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
-  getRedirectResult,
   GoogleAuthProvider,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -23,49 +22,14 @@ export default function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isProcessingRedirect, setIsProcessingRedirect] = useState(false);
-
-  // Check for redirect result on mount
-  useEffect(() => {
-    const handleRedirectResult = async () => {
-      try {
-        console.log('[AUTH] Checking for redirect result...');
-        const result = await getRedirectResult(auth);
-        if (result) {
-          console.log('[AUTH] ✅ Google redirect result received, user:', result.user.uid);
-          setIsProcessingRedirect(true);
-          
-          console.log('[AUTH] Waiting for authContext to set encryption key...');
-          setTimeout(() => {
-            setIsProcessingRedirect(false);
-          }, 1000);
-        } else {
-          console.log('[AUTH] No redirect result found (normal page load)');
-        }
-      } catch (err: unknown) {
-        const error = err as { code?: string; message?: string };
-        console.error('[AUTH] ❌ Error handling redirect result:', error);
-        if (error.code === 'auth/popup-closed-by-user') {
-          setError('Přihlášení bylo zrušeno');
-        } else if (error.code === 'auth/cancelled-popup-request') {
-          // Ignorovat - uživatel zavřel popup
-        } else {
-          setError(error.message || 'Chyba při přihlášení přes Google');
-        }
-        setIsProcessingRedirect(false);
-      }
-    };
-
-    handleRedirectResult();
-  }, [router]);
 
   // Redirect if already logged in with encryption key
   useEffect(() => {
-    if (user && encryptionKey && !isProcessingRedirect) {
+    if (user && encryptionKey) {
       console.log('[AUTH] User already logged in with encryption key, redirecting to dashboard...');
       router.push('/dashboard');
     }
-  }, [user, encryptionKey, isProcessingRedirect, router]);
+  }, [user, encryptionKey, router]);
 
   const handleGoogleSignIn = async () => {
     setError('');
