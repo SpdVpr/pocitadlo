@@ -7,6 +7,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   browserLocalPersistence,
   setPersistence,
@@ -24,15 +25,36 @@ export default function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
   const addDebugLog = (message: string) => {
     console.log(message);
-    setDebugLogs(prev => [...prev.slice(-10), `${new Date().toLocaleTimeString()}: ${message}`]);
   };
 
   useEffect(() => {
     addDebugLog(`[AUTH_PAGE] Mount - user: ${!!user}, encryptionKey: ${!!encryptionKey}`);
+    
+    // Check for redirect result immediately on mount
+    const checkRedirect = async () => {
+      try {
+        addDebugLog('[AUTH_PAGE] Checking getRedirectResult...');
+        const result = await getRedirectResult(auth);
+        if (result) {
+          addDebugLog(`[AUTH_PAGE] ✅ getRedirectResult returned user: ${result.user.uid}`);
+          addDebugLog(`[AUTH_PAGE] User email: ${result.user.email}`);
+          addDebugLog(`[AUTH_PAGE] User provider: ${result.providerId}`);
+        } else {
+          addDebugLog('[AUTH_PAGE] getRedirectResult returned null (normal page load)');
+        }
+      } catch (error) {
+        addDebugLog(`[AUTH_PAGE] ❌ getRedirectResult error: ${error instanceof Error ? error.message : String(error)}`);
+        const err = error as { code?: string };
+        if (err.code) {
+          addDebugLog(`[AUTH_PAGE] Error code: ${err.code}`);
+        }
+      }
+    };
+    
+    checkRedirect();
   }, []);
 
   // Redirect if already logged in with encryption key
@@ -66,14 +88,21 @@ export default function AuthPage() {
         // Use redirect for mobile devices to avoid WebView issues
         addDebugLog('[AUTH] Using signInWithRedirect for mobile');
         addDebugLog(`[AUTH] Auth domain: ${auth.config.authDomain}`);
+        addDebugLog(`[AUTH] Current auth state: ${auth.currentUser?.uid || 'none'}`);
         
         // CRITICAL: Set persistence BEFORE signInWithRedirect
         addDebugLog('[AUTH] Setting persistence to browserLocalPersistence...');
-        await setPersistence(auth, browserLocalPersistence);
-        addDebugLog('[AUTH] ✅ Persistence set successfully');
+        try {
+          await setPersistence(auth, browserLocalPersistence);
+          addDebugLog('[AUTH] ✅ Persistence set successfully');
+        } catch (persistError) {
+          addDebugLog(`[AUTH] ❌ Persistence error: ${persistError instanceof Error ? persistError.message : String(persistError)}`);
+          throw persistError;
+        }
         
+        addDebugLog('[AUTH] Calling signInWithRedirect...');
         await signInWithRedirect(auth, provider);
-        addDebugLog('[AUTH] signInWithRedirect called - should redirect now');
+        addDebugLog('[AUTH] signInWithRedirect returned - redirecting to Google...');
         // Note: onAuthStateChanged in authContext will handle the result
       } else {
         // Use popup for desktop
@@ -174,17 +203,8 @@ export default function AuthPage() {
           <div className="bg-blue-100 border border-blue-400 text-blue-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg mb-4 sm:mb-6 text-sm sm:text-base">
             <div className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700"></div>
-              Dokončování Google přihlášení... (čeká na encryption key)
+              Dokončování přihlášení...
             </div>
-          </div>
-        )}
-
-        {debugLogs.length > 0 && (
-          <div className="bg-gray-100 border border-gray-300 text-gray-800 px-2 sm:px-3 py-2 rounded-lg mb-4 text-xs max-h-40 overflow-y-auto">
-            <div className="font-bold mb-1">Debug Log:</div>
-            {debugLogs.map((log, i) => (
-              <div key={i} className="font-mono text-[10px] sm:text-xs">{log}</div>
-            ))}
           </div>
         )}
 
