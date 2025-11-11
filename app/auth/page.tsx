@@ -34,14 +34,20 @@ export default function AuthPage() {
         const result = await getRedirectResult(auth);
         if (result) {
           console.log('[AUTH_PAGE] ✅ Redirect result found:', result.user.uid);
-          // Don't do anything - let authContext handle it via onAuthStateChanged
-          // Keep processingRedirect true until redirect happens
+          // Wait for authContext to set encryptionKey, then redirect will happen automatically
+          // Don't clear processingRedirect - it will stay true until we redirect to dashboard
         } else {
           console.log('[AUTH_PAGE] No redirect result (normal page load)');
           setProcessingRedirect(false);
         }
       } catch (error) {
         console.error('[AUTH_PAGE] Error checking redirect result:', error);
+        const err = error as { code?: string; message?: string };
+        if (err.code === 'auth/unauthorized-domain') {
+          setError('Doména není autorizována. Kontaktujte správce.');
+        } else {
+          setError(err.message || 'Chyba při zpracování přihlášení');
+        }
         setProcessingRedirect(false);
       }
     };
@@ -50,12 +56,13 @@ export default function AuthPage() {
 
   // Redirect if already logged in with encryption key
   useEffect(() => {
-    console.log('[AUTH_PAGE] Check - user:', !!user, 'encryptionKey:', !!encryptionKey);
+    console.log('[AUTH_PAGE] Check - user:', !!user, 'encryptionKey:', !!encryptionKey, 'processingRedirect:', processingRedirect);
     if (user && encryptionKey) {
       console.log('[AUTH_PAGE] ✅ User + encryptionKey ready, redirecting to dashboard...');
+      setProcessingRedirect(false);
       router.push('/dashboard');
     }
-  }, [user, encryptionKey, router]);
+  }, [user, encryptionKey, router, processingRedirect]);
 
   const handleGoogleSignIn = async () => {
     setError('');
