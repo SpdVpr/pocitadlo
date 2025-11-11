@@ -61,9 +61,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isGoogleUser) {
           // Derive key from UID for Google users (always, regardless of localStorage)
           console.log('[AUTH_CONTEXT] Deriving encryption key from UID for Google user...');
+          console.log('[AUTH_CONTEXT] User UID:', currentUser.uid);
+          console.log('[AUTH_CONTEXT] Time:', new Date().toISOString());
           try {
-            const key = await deriveKeyFromPassword(currentUser.uid, currentUser.uid);
-            console.log('[AUTH_CONTEXT] Key derived successfully, length:', key.length);
+            const derivationPromise = deriveKeyFromPassword(currentUser.uid, currentUser.uid);
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Key derivation timeout')), 15000)
+            );
+            
+            const key = await Promise.race([derivationPromise, timeoutPromise]) as Uint8Array;
+            console.log('[AUTH_CONTEXT] ✅ Key derived successfully, length:', key.length);
+            console.log('[AUTH_CONTEXT] Key preview:', Array.from(key.slice(0, 8)));
             setEncryptionKey(key);
             lastProcessedUserIdRef.current = currentUser.uid;
             try {
@@ -73,10 +81,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.error('[AUTH_CONTEXT] localStorage not available:', storageError);
             }
             console.log('[AUTH_CONTEXT] ✅ Encryption key SET for user:', currentUser.uid);
+            console.log('[AUTH_CONTEXT] Time after set:', new Date().toISOString());
           } catch (error) {
             console.error('[AUTH_CONTEXT] ❌ Failed to derive encryption key:', error);
+            console.error('[AUTH_CONTEXT] Error type:', error instanceof Error ? error.constructor.name : typeof error);
+            console.error('[AUTH_CONTEXT] Error message:', error instanceof Error ? error.message : String(error));
           } finally {
             processingRef.current = false;
+            console.log('[AUTH_CONTEXT] Setting loading to false (Google user)');
+            setLoading(false);
           }
         } else {
           // Check if we need to derive encryption key for email/password users
@@ -104,10 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           
           processingRef.current = false;
+          console.log('[AUTH_CONTEXT] Setting loading to false (email/password user)');
+          setLoading(false);
         }
-
-        console.log('[AUTH_CONTEXT] Setting loading to false');
-        setLoading(false);
       }
     });
 

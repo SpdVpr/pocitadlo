@@ -7,7 +7,6 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
-  getRedirectResult,
   GoogleAuthProvider,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -23,46 +22,27 @@ export default function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [processingRedirect, setProcessingRedirect] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
-  // Check for redirect result on page load
+  const addDebugLog = (message: string) => {
+    console.log(message);
+    setDebugLogs(prev => [...prev.slice(-10), `${new Date().toLocaleTimeString()}: ${message}`]);
+  };
+
   useEffect(() => {
-    const checkRedirect = async () => {
-      try {
-        console.log('[AUTH_PAGE] Checking for redirect result...');
-        setProcessingRedirect(true);
-        const result = await getRedirectResult(auth);
-        if (result) {
-          console.log('[AUTH_PAGE] ✅ Redirect result found:', result.user.uid);
-          // Wait for authContext to set encryptionKey, then redirect will happen automatically
-          // Don't clear processingRedirect - it will stay true until we redirect to dashboard
-        } else {
-          console.log('[AUTH_PAGE] No redirect result (normal page load)');
-          setProcessingRedirect(false);
-        }
-      } catch (error) {
-        console.error('[AUTH_PAGE] Error checking redirect result:', error);
-        const err = error as { code?: string; message?: string };
-        if (err.code === 'auth/unauthorized-domain') {
-          setError('Doména není autorizována. Kontaktujte správce.');
-        } else {
-          setError(err.message || 'Chyba při zpracování přihlášení');
-        }
-        setProcessingRedirect(false);
-      }
-    };
-    checkRedirect();
+    addDebugLog(`[AUTH_PAGE] Mount - user: ${!!user}, encryptionKey: ${!!encryptionKey}`);
   }, []);
 
   // Redirect if already logged in with encryption key
   useEffect(() => {
-    console.log('[AUTH_PAGE] Check - user:', !!user, 'encryptionKey:', !!encryptionKey, 'processingRedirect:', processingRedirect);
+    addDebugLog(`[AUTH_PAGE] Check - user: ${!!user}, encryptionKey: ${!!encryptionKey}`);
     if (user && encryptionKey) {
-      console.log('[AUTH_PAGE] ✅ User + encryptionKey ready, redirecting to dashboard...');
-      setProcessingRedirect(false);
+      addDebugLog('[AUTH_PAGE] ✅ User + encryptionKey ready, redirecting to dashboard...');
       router.push('/dashboard');
+    } else if (user && !encryptionKey) {
+      addDebugLog('[AUTH_PAGE] ⏳ User present, waiting for encryptionKey...');
     }
-  }, [user, encryptionKey, router, processingRedirect]);
+  }, [user, encryptionKey, router]);
 
   const handleGoogleSignIn = async () => {
     setError('');
@@ -77,19 +57,19 @@ export default function AuthPage() {
       // Detect if mobile device
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-      console.log('[AUTH] Starting Google sign in, isMobile:', isMobile);
-      console.log('[AUTH] Current URL:', window.location.href);
+      addDebugLog(`[AUTH] Starting Google sign in, isMobile: ${isMobile}`);
+      addDebugLog(`[AUTH] Current URL: ${window.location.href}`);
 
       if (isMobile) {
         // Use redirect for mobile devices to avoid WebView issues
-        console.log('[AUTH] Using signInWithRedirect for mobile');
-        console.log('[AUTH] Auth domain:', auth.config.authDomain);
+        addDebugLog('[AUTH] Using signInWithRedirect for mobile');
+        addDebugLog(`[AUTH] Auth domain: ${auth.config.authDomain}`);
         await signInWithRedirect(auth, provider);
-        console.log('[AUTH] signInWithRedirect called - should redirect now');
+        addDebugLog('[AUTH] signInWithRedirect called - should redirect now');
         // Note: onAuthStateChanged in authContext will handle the result
       } else {
         // Use popup for desktop
-        console.log('[AUTH] Using popup for desktop');
+        addDebugLog('[AUTH] Using popup for desktop');
         const userCredential = await signInWithPopup(auth, provider);
 
         // For desktop, derive key immediately and redirect
@@ -182,12 +162,21 @@ export default function AuthPage() {
           {isLogin ? 'Přihlášení' : 'Registrace'}
         </p>
 
-        {processingRedirect && (
+        {user && !encryptionKey && (
           <div className="bg-blue-100 border border-blue-400 text-blue-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg mb-4 sm:mb-6 text-sm sm:text-base">
             <div className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700"></div>
-              Dokončování Google přihlášení...
+              Dokončování Google přihlášení... (čeká na encryption key)
             </div>
+          </div>
+        )}
+
+        {debugLogs.length > 0 && (
+          <div className="bg-gray-100 border border-gray-300 text-gray-800 px-2 sm:px-3 py-2 rounded-lg mb-4 text-xs max-h-40 overflow-y-auto">
+            <div className="font-bold mb-1">Debug Log:</div>
+            {debugLogs.map((log, i) => (
+              <div key={i} className="font-mono text-[10px] sm:text-xs">{log}</div>
+            ))}
           </div>
         )}
 

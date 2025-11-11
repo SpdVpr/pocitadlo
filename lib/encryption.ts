@@ -5,10 +5,19 @@ import { encodeBase64, decodeBase64 } from 'tweetnacl-util';
  * Derives a 32-byte encryption key from a password using PBKDF2
  */
 export async function deriveKeyFromPassword(password: string, salt: string): Promise<Uint8Array> {
+  console.log('[ENCRYPTION] deriveKeyFromPassword called');
+  console.log('[ENCRYPTION] crypto.subtle available:', !!crypto?.subtle);
+  console.log('[ENCRYPTION] window.isSecureContext:', window.isSecureContext);
+  
+  if (!crypto || !crypto.subtle) {
+    throw new Error('Web Crypto API not available. Site must be accessed via HTTPS.');
+  }
+  
   const encoder = new TextEncoder();
   const passwordBuffer = encoder.encode(password);
   const saltBuffer = encoder.encode(salt);
 
+  console.log('[ENCRYPTION] Starting PBKDF2 key derivation...');
   const key = await crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
@@ -22,8 +31,11 @@ export async function deriveKeyFromPassword(password: string, salt: string): Pro
     ['encrypt', 'decrypt']
   );
 
+  console.log('[ENCRYPTION] Key derivation complete, exporting...');
   const rawKey = await crypto.subtle.exportKey('raw', key);
-  return new Uint8Array(rawKey);
+  const result = new Uint8Array(rawKey);
+  console.log('[ENCRYPTION] ✅ Key exported successfully, length:', result.length);
+  return result;
 }
 
 /**
