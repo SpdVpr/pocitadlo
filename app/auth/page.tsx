@@ -33,15 +33,12 @@ export default function AuthPage() {
         const result = await getRedirectResult(auth);
         if (result) {
           console.log('[AUTH] ✅ Google redirect result received, user:', result.user.uid);
-          console.log('[AUTH] Deriving encryption key for mobile user...');
-
-          // Derive key immediately for mobile, same as desktop
-          const encryptionKey = await deriveAndSetEncryptionKey(result.user.uid, result.user.uid);
-          setEncryptionKey(encryptionKey);
-          localStorage.setItem('encryptionKeyType', 'google');
-
-          console.log('[AUTH] ✅ Encryption key set for mobile, redirecting to dashboard');
-          router.push('/dashboard');
+          setIsProcessingRedirect(true);
+          
+          console.log('[AUTH] Waiting for authContext to set encryption key...');
+          setTimeout(() => {
+            setIsProcessingRedirect(false);
+          }, 1000);
         } else {
           console.log('[AUTH] No redirect result found (normal page load)');
         }
@@ -55,11 +52,12 @@ export default function AuthPage() {
         } else {
           setError(error.message || 'Chyba při přihlášení přes Google');
         }
+        setIsProcessingRedirect(false);
       }
     };
 
     handleRedirectResult();
-  }, [router, setEncryptionKey]);
+  }, [router]);
 
   // Redirect if already logged in with encryption key
   useEffect(() => {

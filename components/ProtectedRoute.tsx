@@ -16,15 +16,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
     // If user is logged in but no encryption key after loading, redirect to login
     if (!loading && user && !encryptionKey) {
-      console.log('[PROTECTED_ROUTE] User logged in but no encryption key, waiting 2 seconds...');
-      // Wait a bit for key derivation
+      console.log('[PROTECTED_ROUTE] User logged in but no encryption key, waiting 5 seconds...');
+      // Wait a bit for key derivation (longer for mobile devices)
       const timeout = setTimeout(() => {
         if (!encryptionKey) {
           // Key derivation failed, redirect to login
-          console.log('[PROTECTED_ROUTE] Still no encryption key after 2 seconds, redirecting to auth');
+          console.log('[PROTECTED_ROUTE] Still no encryption key after 5 seconds, redirecting to auth');
           router.push('/auth');
         }
-      }, 2000);
+      }, 5000);
 
       return () => clearTimeout(timeout);
     }
