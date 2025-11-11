@@ -8,6 +8,8 @@ import {
   signInWithPopup,
   signInWithRedirect,
   GoogleAuthProvider,
+  browserLocalPersistence,
+  setPersistence,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { deriveAndSetEncryptionKey } from '@/lib/authContext';
@@ -64,6 +66,12 @@ export default function AuthPage() {
         // Use redirect for mobile devices to avoid WebView issues
         addDebugLog('[AUTH] Using signInWithRedirect for mobile');
         addDebugLog(`[AUTH] Auth domain: ${auth.config.authDomain}`);
+        
+        // CRITICAL: Set persistence BEFORE signInWithRedirect
+        addDebugLog('[AUTH] Setting persistence to browserLocalPersistence...');
+        await setPersistence(auth, browserLocalPersistence);
+        addDebugLog('[AUTH] ✅ Persistence set successfully');
+        
         await signInWithRedirect(auth, provider);
         addDebugLog('[AUTH] signInWithRedirect called - should redirect now');
         // Note: onAuthStateChanged in authContext will handle the result

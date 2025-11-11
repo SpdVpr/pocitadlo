@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth, setPersistence, indexedDBLocalPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getAuth, browserLocalPersistence, browserSessionPersistence, inMemoryPersistence } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -15,16 +15,12 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-setPersistence(auth, indexedDBLocalPersistence)
+auth.setPersistence(browserLocalPersistence)
   .then(() => {
-    console.log('[FIREBASE] ✅ Persistence set to indexedDB (best for mobile)');
+    console.log('[FIREBASE] ✅ Persistence set to browserLocalPersistence');
   })
   .catch((error) => {
-    console.warn('[FIREBASE] indexedDB persistence failed, trying browserLocal:', error);
-    return setPersistence(auth, browserLocalPersistence);
-  })
-  .catch((error) => {
-    console.error('[FIREBASE] ❌ All persistence methods failed:', error);
+    console.error('[FIREBASE] ❌ browserLocalPersistence failed:', error);
   });
 
 export { app, db, auth };
