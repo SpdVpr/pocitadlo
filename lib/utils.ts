@@ -1,0 +1,61 @@
+export function formatTime(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+export function formatHours(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (hours === 0) {
+    return `${minutes}m`;
+  } else if (minutes === 0) {
+    return `${hours}h`;
+  } else {
+    return `${hours}h ${minutes}m`;
+  }
+}
+
+export function formatPrice(amount: number, currency: 'CZK' | 'EUR' = 'CZK'): string {
+  return new Intl.NumberFormat('cs-CZ', {
+    style: 'currency',
+    currency: currency,
+  }).format(amount);
+}
+
+export function parseTimeInput(input: string): number {
+  if (input.includes(':')) {
+    const [hours, minutes] = input.split(':').map(Number);
+    return (hours * 3600) + (minutes * 60);
+  }
+  const hours = parseFloat(input);
+  return Math.round(hours * 3600);
+}
+
+export function getCurrentMonthYear(): { month: number; year: number } {
+  const now = new Date();
+  return {
+    month: now.getMonth() + 1,
+    year: now.getFullYear(),
+  };
+}
+
+export function getMonthName(month: number): string {
+  const months = [
+    'leden', 'únor', 'březen', 'duben', 'květen', 'červen',
+    'červenec', 'srpen', 'září', 'říjen', 'listopad', 'prosinec'
+  ];
+  return months[month - 1];
+}
+
+export function getTodayDate(): { day: number; month: number; year: number } {
+  const now = new Date();
+  return {
+    day: now.getDate(),
+    month: now.getMonth() + 1,
+    year: now.getFullYear(),
+  };
+}

@@ -1,0 +1,654 @@
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  Timestamp,
+  onSnapshot,
+  setDoc,
+} from 'firebase/firestore';
+import { db } from './firebase';
+import { Project, TimeEntry, ActiveTimer, ActiveTimerEntry, TodoItem, UserSettings, InvoiceSettings, ProjectInvoiceSettings, Invoice, Currency } from '@/types';
+import { getCurrentMonthYear, getTodayDate } from './utils';
+import { encryptData, decryptData } from './encryption';
+
+const COLLECTIONS = {
+  PROJECTS: 'projects',
+  TIME_ENTRIES: 'time_entries',
+  ACTIVE_TIMER: 'active_timer',
+  TODOS: 'todos',
+  USER_SETTINGS: 'user_settings',
+  INVOICE_SETTINGS: 'invoice_settings',
+  PROJECT_INVOICE_SETTINGS: 'project_invoice_settings',
+  INVOICES: 'invoices',
+};
+
+export async function createProject(
+  userId: string,
+  name: string,
+  hourlyRate: number,
+  currency: 'CZK' | 'EUR',
+  color: string,
+  encryptionKey: Uint8Array
+): Promise<string> {
+  const now = Timestamp.now();
+
+  const q = query(
+    collection(db, COLLECTIONS.PROJECTS),
+    where('userId', '==', userId),
+    orderBy('order', 'desc')
+  );
+  const snapshot = await getDocs(q);
+  const maxOrder = snapshot.docs.length > 0 ? (snapshot.docs[0].data().order || 0) : 0;
+
+  const projectData = {
+    userId,
+    name: encryptData(name, encryptionKey),
+    hourlyRate: encryptData(hourlyRate.toString(), encryptionKey),
+    currency,
+    color,
+    totalTimeCurrentMonth: 0,
+    totalPriceCurrentMonth: 0,
+    isActive: true,
+    order: maxOrder + 1,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const docRef = await addDoc(collection(db, COLLECTIONS.PROJECTS), projectData);
+  return docRef.id;
+}
+
+export async function updateProject(
+  id: string,
+  data: Partial<Omit<Project, 'id' | 'createdAt'>>,
+  encryptionKey?: Uint8Array
+): Promise<void> {
+  const projectRef = doc(db, COLLECTIONS.PROJECTS, id);
+  const updateData: Record<string, unknown> = { ...data, updatedAt: Timestamp.now() };
+
+  // Encrypt sensitive fields if provided
+  if (encryptionKey) {
+    if (data.name) {
+      updateData.name = encryptData(data.name, encryptionKey);
+    }
+    if (data.hourlyRate !== undefined) {
+      updateData.hourlyRate = encryptData(data.hourlyRate.toString(), encryptionKey);
+    }
+  }
+
+  await updateDoc(projectRef, updateData);
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  const projectRef = doc(db, COLLECTIONS.PROJECTS, id);
+  await deleteDoc(projectRef);
+}
+
+export function subscribeToProjects(
+  userId: string,
+  callback: (projects: Project[]) => void,
+  encryptionKey: Uint8Array,
+  activeOnly: boolean = true
+) {
+  const q = query(
+    collection(db, COLLECTIONS.PROJECTS),
+    where('userId', '==', userId)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    let projects: Project[] = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      try {
+        return {
+          id: doc.id,
+          ...data,
+          name: decryptData(data.name, encryptionKey),
+          hourlyRate: parseFloat(decryptData(data.hourlyRate, encryptionKey)),
+          order: data.order ?? 0,
+        } as Project;
+      } catch (error) {
+        console.error('Error decrypting project:', error);
+        return {
+          id: doc.id,
+          ...data,
+          name: '[Chyba při dešifrování]',
+          hourlyRate: 0,
+          order: data.order ?? 0,
+        } as Project;
+      }
+    });
+
+    if (activeOnly) {
+      projects = projects.filter(p => p.isActive);
+    }
+
+    projects.sort((a, b) => a.order - b.order);
+
+    callback(projects);
+  });
+}
+
+export async function createTimeEntry(
+  userId: string,
+  projectId: string,
+  duration: number,
+  type: 'timer' | 'manual',
+  hourlyRate: number,
+  currency: Currency,
+  encryptionKey: Uint8Array,
+  note?: string
+): Promise<string> {
+  const now = Timestamp.now();
+  const { month, year } = getCurrentMonthYear();
+  const price = (duration / 3600) * hourlyRate;
+
+  const entryData: Record<string, unknown> = {
+    userId,
+    projectId,
+    type,
+    startTime: now,
+    endTime: now,
+    duration,
+    price: encryptData(price.toString(), encryptionKey),
+    currency,
+    month,
+    year,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  if (note) {
+    entryData.note = encryptData(note, encryptionKey);
+  }
+
+  const docRef = await addDoc(collection(db, COLLECTIONS.TIME_ENTRIES), entryData);
+
+  await updateProjectTotals(projectId, duration, price);
+
+  return docRef.id;
+}
+
+export async function updateProjectTotals(
+  projectId: string,
+  durationDelta: number,
+  priceDelta: number
+): Promise<void> {
+  const projectRef = doc(db, COLLECTIONS.PROJECTS, projectId);
+  const projectSnap = await getDoc(projectRef);
+
+  if (projectSnap.exists()) {
+    const project = projectSnap.data() as Project;
+    await updateDoc(projectRef, {
+      totalTimeCurrentMonth: project.totalTimeCurrentMonth + durationDelta,
+      totalPriceCurrentMonth: project.totalPriceCurrentMonth + priceDelta,
+      updatedAt: Timestamp.now(),
+    });
+  }
+}
+
+export function subscribeToTimeEntries(
+  userId: string,
+  callback: (entries: TimeEntry[]) => void,
+  encryptionKey: Uint8Array,
+  projectId?: string,
+  month?: number,
+  year?: number
+) {
+  const q = query(
+    collection(db, COLLECTIONS.TIME_ENTRIES),
+    where('userId', '==', userId)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    let entries: TimeEntry[] = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      try {
+        return {
+          id: doc.id,
+          ...data,
+          price: parseFloat(decryptData(data.price, encryptionKey)),
+          note: data.note ? decryptData(data.note, encryptionKey) : undefined,
+        } as TimeEntry;
+      } catch (error) {
+        console.error('Error decrypting entry:', error);
+        return {
+          id: doc.id,
+          ...data,
+          price: 0,
+          note: '[Chyba při dešifrování]',
+        } as TimeEntry;
+      }
+    });
+
+    if (projectId) {
+      entries = entries.filter(e => e.projectId === projectId);
+    }
+    if (month !== undefined && year !== undefined) {
+      entries = entries.filter(e => e.month === month && e.year === year);
+    }
+
+    entries.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
+    callback(entries);
+  });
+}
+
+export function subscribeToDailyTimeEntries(
+  userId: string,
+  callback: (entries: TimeEntry[]) => void,
+  encryptionKey: Uint8Array
+) {
+  const { day, month, year } = getTodayDate();
+  const q = query(
+    collection(db, COLLECTIONS.TIME_ENTRIES),
+    where('userId', '==', userId)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    let entries: TimeEntry[] = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      try {
+        return {
+          id: doc.id,
+          ...data,
+          price: parseFloat(decryptData(data.price, encryptionKey)),
+          note: data.note ? decryptData(data.note, encryptionKey) : undefined,
+        } as TimeEntry;
+      } catch (error) {
+        console.error('Error decrypting entry:', error);
+        return {
+          id: doc.id,
+          ...data,
+          price: 0,
+          note: '[Chyba při dešifrování]',
+        } as TimeEntry;
+      }
+    });
+
+    // Filter for today's entries
+    entries = entries.filter(e => {
+      const entryDate = e.createdAt.toDate();
+      return (
+        entryDate.getDate() === day &&
+        entryDate.getMonth() + 1 === month &&
+        entryDate.getFullYear() === year
+      );
+    });
+
+    entries.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
+    callback(entries);
+  });
+}
+
+export async function deleteTimeEntry(id: string, projectId: string, duration: number, price: number): Promise<void> {
+  const entryRef = doc(db, COLLECTIONS.TIME_ENTRIES, id);
+  await deleteDoc(entryRef);
+  await updateProjectTotals(projectId, -duration, -price);
+}
+
+// Multi-timer functions - stores timers as array in single document active_timer/{userId}
+// This approach works with existing Firestore security rules (no subcollection needed)
+
+export async function startProjectTimer(userId: string, projectId: string, startTime?: Date): Promise<void> {
+  const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, userId);
+  const timerSnap = await getDoc(timerRef);
+  const ts = startTime ? Timestamp.fromDate(startTime) : Timestamp.now();
+
+  if (timerSnap.exists()) {
+    const data = timerSnap.data();
+    const timers: Array<{ projectId: string; startTime: Timestamp }> = data.timers || [];
+    // Remove existing timer for this project if any
+    const filtered = timers.filter(t => t.projectId !== projectId);
+    filtered.push({ projectId, startTime: ts });
+    await setDoc(timerRef, { timers: filtered });
+  } else {
+    await setDoc(timerRef, { timers: [{ projectId, startTime: ts }] });
+  }
+}
+
+export async function stopProjectTimer(userId: string, projectId: string): Promise<void> {
+  const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, userId);
+  const timerSnap = await getDoc(timerRef);
+
+  if (timerSnap.exists()) {
+    const data = timerSnap.data();
+    const timers: Array<{ projectId: string; startTime: Timestamp }> = data.timers || [];
+    const filtered = timers.filter(t => t.projectId !== projectId);
+    await setDoc(timerRef, { timers: filtered });
+  }
+}
+
+export function subscribeToActiveTimers(
+  userId: string,
+  callback: (timers: ActiveTimerEntry[]) => void
+) {
+  const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, userId);
+
+  return onSnapshot(
+    timerRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        // Support new format (timers array)
+        if (data.timers && Array.isArray(data.timers)) {
+          const timers: ActiveTimerEntry[] = data.timers.map((t: { projectId: string; startTime: Timestamp }) => ({
+            projectId: t.projectId,
+            startTime: t.startTime,
+          }));
+          callback(timers);
+        }
+        // Support legacy format (single projectId + startTime)
+        else if (data.projectId && data.startTime) {
+          callback([{ projectId: data.projectId, startTime: data.startTime }]);
+        }
+        else {
+          callback([]);
+        }
+      } else {
+        callback([]);
+      }
+    },
+    (error) => {
+      console.error('Error in active timers subscription:', error);
+    }
+  );
+}
+
+
+export async function resetMonthlyStats(userId: string): Promise<void> {
+  const q = query(
+    collection(db, COLLECTIONS.PROJECTS),
+    where('userId', '==', userId)
+  );
+  const snapshot = await getDocs(q);
+
+  const updates = snapshot.docs.map((doc) =>
+    updateDoc(doc.ref, {
+      totalTimeCurrentMonth: 0,
+      totalPriceCurrentMonth: 0,
+      updatedAt: Timestamp.now(),
+    })
+  );
+
+  await Promise.all(updates);
+}
+
+// TODO List Functions
+export async function createTodo(userId: string, text: string): Promise<string> {
+  const now = Timestamp.now();
+
+  const todoData = {
+    userId,
+    text,
+    completed: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const docRef = await addDoc(collection(db, COLLECTIONS.TODOS), todoData);
+  return docRef.id;
+}
+
+export async function updateTodo(
+  id: string,
+  data: Partial<Omit<TodoItem, 'id' | 'createdAt'>>
+): Promise<void> {
+  const todoRef = doc(db, COLLECTIONS.TODOS, id);
+  await updateDoc(todoRef, {
+    ...data,
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export async function deleteTodo(id: string): Promise<void> {
+  const todoRef = doc(db, COLLECTIONS.TODOS, id);
+  await deleteDoc(todoRef);
+}
+
+export function subscribeToTodos(userId: string, callback: (todos: TodoItem[]) => void) {
+  const q = query(
+    collection(db, COLLECTIONS.TODOS),
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc')
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const todos: TodoItem[] = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    } as TodoItem));
+
+    callback(todos);
+  });
+}
+
+// User Settings Functions
+export async function getUserSettings(userId: string): Promise<UserSettings | null> {
+  const settingsRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
+  const settingsSnap = await getDoc(settingsRef);
+
+  if (settingsSnap.exists()) {
+    return settingsSnap.data() as UserSettings;
+  }
+  return null;
+}
+
+export async function updateUserSettings(
+  userId: string,
+  settings: Partial<Omit<UserSettings, 'userId' | 'createdAt'>>
+): Promise<void> {
+  const settingsRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
+  const existingSettings = await getDoc(settingsRef);
+
+  if (existingSettings.exists()) {
+    await updateDoc(settingsRef, {
+      ...settings,
+      updatedAt: Timestamp.now(),
+    });
+  } else {
+    await setDoc(settingsRef, {
+      userId,
+      timerStartOffset: settings.timerStartOffset ?? 0,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+  }
+}
+
+export function subscribeToUserSettings(
+  userId: string,
+  callback: (settings: UserSettings | null) => void
+) {
+  const settingsRef = doc(db, COLLECTIONS.USER_SETTINGS, userId);
+
+  return onSnapshot(settingsRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data() as UserSettings);
+    } else {
+      callback(null);
+    }
+  });
+}
+
+export async function getInvoiceSettings(userId: string): Promise<InvoiceSettings | null> {
+  const settingsRef = doc(db, COLLECTIONS.INVOICE_SETTINGS, userId);
+  const settingsSnap = await getDoc(settingsRef);
+
+  if (settingsSnap.exists()) {
+    return settingsSnap.data() as InvoiceSettings;
+  }
+  return null;
+}
+
+export async function updateInvoiceSettings(
+  userId: string,
+  settings: Partial<Omit<InvoiceSettings, 'userId' | 'createdAt'>>
+): Promise<void> {
+  const settingsRef = doc(db, COLLECTIONS.INVOICE_SETTINGS, userId);
+  const existingSettings = await getDoc(settingsRef);
+
+  if (existingSettings.exists()) {
+    await updateDoc(settingsRef, {
+      ...settings,
+      updatedAt: Timestamp.now(),
+    });
+  } else {
+    await setDoc(settingsRef, {
+      userId,
+      companyName: settings.companyName ?? '',
+      street: settings.street ?? '',
+      city: settings.city ?? '',
+      zipCode: settings.zipCode ?? '',
+      ico: settings.ico ?? '',
+      dic: settings.dic,
+      phone: settings.phone,
+      email: settings.email,
+      bankAccount: settings.bankAccount,
+      invoicePrefix: settings.invoicePrefix ?? 'F',
+      nextInvoiceNumber: settings.nextInvoiceNumber ?? 1,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+  }
+}
+
+export function subscribeToInvoiceSettings(
+  userId: string,
+  callback: (settings: InvoiceSettings | null) => void
+) {
+  const settingsRef = doc(db, COLLECTIONS.INVOICE_SETTINGS, userId);
+
+  return onSnapshot(settingsRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data() as InvoiceSettings);
+    } else {
+      callback(null);
+    }
+  });
+}
+
+export async function getProjectInvoiceSettings(projectId: string): Promise<ProjectInvoiceSettings | null> {
+  const settingsRef = doc(db, COLLECTIONS.PROJECT_INVOICE_SETTINGS, projectId);
+  const settingsSnap = await getDoc(settingsRef);
+
+  if (settingsSnap.exists()) {
+    return settingsSnap.data() as ProjectInvoiceSettings;
+  }
+  return null;
+}
+
+export async function updateProjectInvoiceSettings(
+  projectId: string,
+  settings: Partial<Omit<ProjectInvoiceSettings, 'projectId' | 'createdAt'>>
+): Promise<void> {
+  const settingsRef = doc(db, COLLECTIONS.PROJECT_INVOICE_SETTINGS, projectId);
+  const existingSettings = await getDoc(settingsRef);
+
+  if (existingSettings.exists()) {
+    await updateDoc(settingsRef, {
+      ...settings,
+      updatedAt: Timestamp.now(),
+    });
+  } else {
+    await setDoc(settingsRef, {
+      projectId,
+      clientName: settings.clientName ?? '',
+      street: settings.street ?? '',
+      city: settings.city ?? '',
+      zipCode: settings.zipCode ?? '',
+      ico: settings.ico,
+      dic: settings.dic,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+  }
+}
+
+export async function createInvoice(
+  userId: string,
+  projectId: string,
+  invoiceData: Omit<Invoice, 'id' | 'userId' | 'projectId' | 'createdAt'>
+): Promise<string> {
+  const now = Timestamp.now();
+
+  const invoice = {
+    userId,
+    projectId,
+    ...invoiceData,
+    createdAt: now,
+  };
+
+  const docRef = await addDoc(collection(db, COLLECTIONS.INVOICES), invoice);
+
+  const settingsRef = doc(db, COLLECTIONS.INVOICE_SETTINGS, userId);
+  const settingsSnap = await getDoc(settingsRef);
+  
+  if (settingsSnap.exists()) {
+    const settings = settingsSnap.data() as InvoiceSettings;
+    await updateDoc(settingsRef, {
+      nextInvoiceNumber: settings.nextInvoiceNumber + 1,
+      updatedAt: Timestamp.now(),
+    });
+  }
+
+  return docRef.id;
+}
+
+export function subscribeToInvoices(
+  userId: string,
+  callback: (invoices: Invoice[]) => void,
+  projectId?: string
+) {
+  const q = query(
+    collection(db, COLLECTIONS.INVOICES),
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc')
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    let invoices: Invoice[] = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    } as Invoice));
+
+    if (projectId) {
+      invoices = invoices.filter(inv => inv.projectId === projectId);
+    }
+
+    callback(invoices);
+  });
+}
+
+export async function resetProjectStats(projectId: string): Promise<void> {
+  const projectRef = doc(db, COLLECTIONS.PROJECTS, projectId);
+  await updateDoc(projectRef, {
+    totalTimeCurrentMonth: 0,
+    totalPriceCurrentMonth: 0,
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export async function deleteInvoice(invoiceId: string): Promise<void> {
+  const invoiceRef = doc(db, COLLECTIONS.INVOICES, invoiceId);
+  await deleteDoc(invoiceRef);
+}
+
+export async function updateProjectsOrder(projectOrders: { id: string; order: number }[]): Promise<void> {
+  const updates = projectOrders.map(({ id, order }) => {
+    const projectRef = doc(db, COLLECTIONS.PROJECTS, id);
+    return updateDoc(projectRef, {
+      order,
+      updatedAt: Timestamp.now(),
+    });
+  });
+
+  await Promise.all(updates);
+}
