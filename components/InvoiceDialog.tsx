@@ -7,7 +7,7 @@ import {
   getInvoiceSettings, 
   getProjectInvoiceSettings, 
   createInvoice, 
-  resetProjectStats 
+  resetProjectFull 
 } from '@/lib/firestore';
 import { Timestamp } from 'firebase/firestore';
 import { generateInvoicePDF } from '@/lib/pdfGenerator';
@@ -123,7 +123,7 @@ export default function InvoiceDialog({ project, onClose }: InvoiceDialogProps) 
 
       await generateInvoicePDF(fullInvoice);
 
-      await resetProjectStats(project.id);
+      await resetProjectFull(project.id);
 
       onClose();
     } catch (err) {
