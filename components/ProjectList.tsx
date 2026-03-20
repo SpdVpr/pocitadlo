@@ -106,9 +106,23 @@ export default function ProjectList({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Build per-project current month stats from time entries
+  // Build per-project current month stats from time entries.
+  // Záznamy vytvořené PŘED project.resetAt se ignorují (byly vynulovány),
+  // ale stále existují v historii.
+  const projectResetMap = new Map<string, number>();
+  projects.forEach(p => {
+    if (p.resetAt) {
+      projectResetMap.set(p.id, p.resetAt.toMillis());
+    }
+  });
+
   const projectMonthlyStats = new Map<string, { time: number; price: number }>();
   monthlyEntries.forEach(entry => {
+    const resetAtMs = projectResetMap.get(entry.projectId);
+    if (resetAtMs && entry.createdAt.toMillis() <= resetAtMs) {
+      // Tento záznam byl před vynulováním — nezapočítávat do dashboardu
+      return;
+    }
     const existing = projectMonthlyStats.get(entry.projectId) || { time: 0, price: 0 };
     existing.time += entry.duration;
     existing.price += entry.price;

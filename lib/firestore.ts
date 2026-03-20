@@ -627,11 +627,15 @@ export function subscribeToInvoices(
   });
 }
 
-export async function resetProjectStats(projectId: string): Promise<void> {
+export async function resetProjectFull(projectId: string): Promise<void> {
+  // Pouze nastaví resetAt timestamp a vynuluje countery.
+  // Time entries se NEMAŽOU — zůstávají v historii.
+  // Dashboard filtruje záznamy na základě resetAt.
   const projectRef = doc(db, COLLECTIONS.PROJECTS, projectId);
   await updateDoc(projectRef, {
     totalTimeCurrentMonth: 0,
     totalPriceCurrentMonth: 0,
+    resetAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
   });
 }

@@ -13,6 +13,7 @@ export interface Project {
   totalPriceCurrentMonth: number;
   isActive: boolean;
   order: number;
+  resetAt?: Timestamp; // timestamp posledního vynulování
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

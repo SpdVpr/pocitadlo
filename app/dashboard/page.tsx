@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Project, TimeEntry } from '@/types';
-import { subscribeToProjects, subscribeToDailyTimeEntries, subscribeToTimeEntries, resetProjectStats, updateProjectsOrder } from '@/lib/firestore';
+import { subscribeToProjects, subscribeToDailyTimeEntries, subscribeToTimeEntries, resetProjectFull, updateProjectsOrder } from '@/lib/firestore';
 import { getCurrentMonthYear, getMonthName, formatHours, formatPrice } from '@/lib/utils';
 import { useAuth } from '@/lib/authContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -94,7 +94,7 @@ function DashboardContent() {
 
   const handleResetProject = async (project: Project) => {
     try {
-      await resetProjectStats(project.id);
+      await resetProjectFull(project.id);
     } catch (error) {
       console.error('Error resetting project:', error);
     }
@@ -113,13 +113,22 @@ function DashboardContent() {
     }
   };
 
-  // Build a map of projectId -> currency from projects
+  // Build a map of projectId -> currency and resetAt from projects
   const projectCurrencyMap = new Map<string, string>();
-  projects.forEach(p => projectCurrencyMap.set(p.id, p.currency || 'CZK'));
+  const projectResetMap = new Map<string, number>();
+  projects.forEach(p => {
+    projectCurrencyMap.set(p.id, p.currency || 'CZK');
+    if (p.resetAt) {
+      projectResetMap.set(p.id, p.resetAt.toMillis());
+    }
+  });
 
-  // Compute monthly stats from actual time entries (source of truth)
+  // Compute monthly stats from actual time entries (source of truth).
+  // Záznamy vytvořené před project.resetAt se ignorují — jsou v historii, ale ne v aktivním součtu.
   const totalStats = monthlyEntries.reduce(
     (acc, entry) => {
+      const resetAtMs = projectResetMap.get(entry.projectId);
+      if (resetAtMs && entry.createdAt.toMillis() <= resetAtMs) return acc;
       const currency = entry.currency || projectCurrencyMap.get(entry.projectId) || 'CZK';
       return {
         CZK: {
@@ -137,6 +146,8 @@ function DashboardContent() {
 
   const dailyStats = dailyEntries.reduce(
     (acc, entry) => {
+      const resetAtMs = projectResetMap.get(entry.projectId);
+      if (resetAtMs && entry.createdAt.toMillis() <= resetAtMs) return acc;
       const currency = entry.currency || 'CZK';
       return {
         CZK: {
