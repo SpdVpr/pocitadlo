@@ -9,8 +9,15 @@ import { usePathname } from 'next/navigation';
 
 interface RunningTimer {
   projectId: string;
-  startTime: Date;
+  startTime: Date | null; // null when paused
+  accumulatedSeconds: number;
+  isPaused: boolean;
   elapsedSeconds: number;
+}
+
+function computeElapsed(t: { startTime: Date | null; accumulatedSeconds: number; isPaused: boolean }) {
+  if (t.isPaused || !t.startTime) return t.accumulatedSeconds;
+  return t.accumulatedSeconds + Math.floor((Date.now() - t.startTime.getTime()) / 1000);
 }
 
 export default function GlobalTimer() {
@@ -32,49 +39,55 @@ export default function GlobalTimer() {
     if (!user) return;
 
     const unsubscribe = subscribeToActiveTimers(user.uid, (timers: ActiveTimerEntry[]) => {
+      const mapTimer = (t: ActiveTimerEntry, existing?: RunningTimer): RunningTimer => {
+        const startDate = t.startTime ? t.startTime.toDate() : null;
+        const accumulated = t.accumulatedSeconds || 0;
+        const isPaused = t.isPaused || false;
+        if (
+          existing &&
+          (existing.startTime?.getTime() ?? null) === (startDate?.getTime() ?? null) &&
+          existing.isPaused === isPaused &&
+          existing.accumulatedSeconds === accumulated
+        ) {
+          return existing;
+        }
+        return {
+          projectId: t.projectId,
+          startTime: startDate,
+          accumulatedSeconds: accumulated,
+          isPaused,
+          elapsedSeconds: computeElapsed({ startTime: startDate, accumulatedSeconds: accumulated, isPaused }),
+        };
+      };
+
       if (projects.length > 0) {
         const validTimers = timers.filter(t => projects.find(p => p.id === t.projectId));
-        setRunningTimers(prev => {
-          return validTimers.map(t => {
-            const existing = prev.find(rt => rt.projectId === t.projectId);
-            const startDate = t.startTime.toDate();
-            if (existing && existing.startTime.getTime() === startDate.getTime()) {
-              return existing;
-            }
-            return {
-              projectId: t.projectId,
-              startTime: startDate,
-              elapsedSeconds: Math.floor((Date.now() - startDate.getTime()) / 1000),
-            };
-          });
-        });
+        setRunningTimers(prev => validTimers.map(t => mapTimer(t, prev.find(rt => rt.projectId === t.projectId))));
       } else {
-        setRunningTimers(timers.map(t => ({
-          projectId: t.projectId,
-          startTime: t.startTime.toDate(),
-          elapsedSeconds: Math.floor((Date.now() - t.startTime.toDate().getTime()) / 1000),
-        })));
+        setRunningTimers(prev => timers.map(t => mapTimer(t, prev.find(rt => rt.projectId === t.projectId))));
       }
     });
 
     return () => unsubscribe();
   }, [user, projects]);
 
-  // Update elapsed time for all timers
+  // Update elapsed time for all running (non-paused) timers
+  const activeCount = runningTimers.filter(t => !t.isPaused && t.startTime).length;
   useEffect(() => {
-    if (runningTimers.length === 0) return;
+    if (activeCount === 0) return;
 
     const interval = setInterval(() => {
       setRunningTimers(prev =>
-        prev.map(timer => ({
-          ...timer,
-          elapsedSeconds: Math.floor((Date.now() - timer.startTime.getTime()) / 1000),
-        }))
+        prev.map(timer =>
+          timer.isPaused || !timer.startTime
+            ? timer
+            : { ...timer, elapsedSeconds: computeElapsed(timer) }
+        )
       );
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [runningTimers.length]);
+  }, [activeCount]);
 
   // Update document title with first running timer
   useEffect(() => {
@@ -120,7 +133,7 @@ export default function GlobalTimer() {
                 const project = projects.find(p => p.id === timer.projectId);
                 if (!project) return null;
                 return (
-                  <div key={timer.projectId} className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/10 flex-shrink-0">
+                  <div key={timer.projectId} className={`flex items-center gap-2 px-3 py-1 rounded-lg flex-shrink-0 ${timer.isPaused ? 'bg-white/5' : 'bg-white/10'}`}>
                     <div
                       className="w-3 h-3 rounded-full flex-shrink-0"
                       style={{ backgroundColor: project.color }}
@@ -129,7 +142,7 @@ export default function GlobalTimer() {
                       {project.name}
                     </span>
                     <span className="font-mono text-xs">
-                      {formatTime(timer.elapsedSeconds)}
+                      {timer.isPaused ? '⏸ ' : ''}{formatTime(timer.elapsedSeconds)}
                     </span>
                   </div>
                 );

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Project, ActiveTimerEntry } from '@/types';
 import { formatTime } from '@/lib/utils';
-import { startProjectTimer, stopProjectTimer, createTimeEntry, subscribeToActiveTimers, subscribeToUserSettings, updateUserSettings } from '@/lib/firestore';
+import { startProjectTimer, stopProjectTimer, pauseProjectTimer, resumeProjectTimer, createTimeEntry, subscribeToActiveTimers, subscribeToUserSettings, updateUserSettings } from '@/lib/firestore';
 import { useAuth } from '@/lib/authContext';
 
 interface TimerProps {
@@ -14,8 +14,15 @@ interface TimerProps {
 
 interface RunningTimer {
   projectId: string;
-  startTime: Date;
+  startTime: Date | null; // null when paused
+  accumulatedSeconds: number;
+  isPaused: boolean;
   elapsedSeconds: number;
+}
+
+function computeElapsed(t: { startTime: Date | null; accumulatedSeconds: number; isPaused: boolean }) {
+  if (t.isPaused || !t.startTime) return t.accumulatedSeconds;
+  return t.accumulatedSeconds + Math.floor((Date.now() - t.startTime.getTime()) / 1000);
 }
 
 export default function Timer({ projects, onProjectSelect, selectedProjectId }: TimerProps) {
@@ -46,14 +53,23 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
       setRunningTimers(prev => {
         return validTimers.map(t => {
           const existing = prev.find(rt => rt.projectId === t.projectId);
-          const startDate = t.startTime.toDate();
-          if (existing && existing.startTime.getTime() === startDate.getTime()) {
+          const startDate = t.startTime ? t.startTime.toDate() : null;
+          const accumulated = t.accumulatedSeconds || 0;
+          const isPaused = t.isPaused || false;
+          if (
+            existing &&
+            (existing.startTime?.getTime() ?? null) === (startDate?.getTime() ?? null) &&
+            existing.isPaused === isPaused &&
+            existing.accumulatedSeconds === accumulated
+          ) {
             return existing;
           }
           return {
             projectId: t.projectId,
             startTime: startDate,
-            elapsedSeconds: Math.floor((Date.now() - startDate.getTime()) / 1000),
+            accumulatedSeconds: accumulated,
+            isPaused,
+            elapsedSeconds: computeElapsed({ startTime: startDate, accumulatedSeconds: accumulated, isPaused }),
           };
         });
       });
@@ -61,19 +77,21 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
     return () => unsubscribe();
   }, [projects, user]);
 
-  // Tick all running timers
+  // Tick all running (non-paused) timers
+  const activeCount = runningTimers.filter(t => !t.isPaused && t.startTime).length;
   useEffect(() => {
-    if (runningTimers.length === 0) return;
+    if (activeCount === 0) return;
     const interval = setInterval(() => {
       setRunningTimers(prev =>
-        prev.map(timer => ({
-          ...timer,
-          elapsedSeconds: Math.floor((Date.now() - timer.startTime.getTime()) / 1000),
-        }))
+        prev.map(timer =>
+          timer.isPaused || !timer.startTime
+            ? timer
+            : { ...timer, elapsedSeconds: computeElapsed(timer) }
+        )
       );
     }, 1000);
     return () => clearInterval(interval);
-  }, [runningTimers.length]);
+  }, [activeCount]);
 
   const isProjectRunning = useCallback((projectId: string) => {
     return runningTimers.some(t => t.projectId === projectId);
@@ -120,6 +138,26 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
     }
   };
 
+  const handlePause = async (projectId: string) => {
+    if (!user) return;
+    try {
+      await pauseProjectTimer(user.uid, projectId);
+    } catch (error) {
+      console.error('Error pausing timer:', error);
+      alert('Chyba při pozastavení časovače.');
+    }
+  };
+
+  const handleResume = async (projectId: string) => {
+    if (!user) return;
+    try {
+      await resumeProjectTimer(user.uid, projectId);
+    } catch (error) {
+      console.error('Error resuming timer:', error);
+      alert('Chyba při pokračování časovače.');
+    }
+  };
+
   const handleOffsetChange = async (offset: number) => {
     if (!user) return;
     try {
@@ -148,28 +186,59 @@ export default function Timer({ projects, onProjectSelect, selectedProjectId }: 
         return (
           <div
             key={timer.projectId}
-            className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border-2 border-red-200"
+            className={`bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border-2 ${
+              timer.isPaused ? 'border-amber-200' : 'border-red-200'
+            }`}
           >
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse flex-shrink-0" />
+                <div
+                  className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                    timer.isPaused ? 'bg-amber-500' : 'bg-red-500 animate-pulse'
+                  }`}
+                />
                 <div
                   className="w-4 h-4 rounded-full flex-shrink-0"
                   style={{ backgroundColor: project.color }}
                 />
                 <div className="min-w-0">
                   <span className="font-bold text-sm sm:text-base text-gray-800 truncate block">{project.name}</span>
-                  <span className="text-xs text-gray-500">{project.hourlyRate} {(project.currency || 'CZK') === 'EUR' ? '€' : 'Kč'}/hod</span>
+                  <span className="text-xs text-gray-500">
+                    {timer.isPaused
+                      ? 'Pozastaveno'
+                      : `${project.hourlyRate} ${(project.currency || 'CZK') === 'EUR' ? '€' : 'Kč'}/hod`}
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-                <div className="text-2xl sm:text-4xl font-mono font-bold text-gray-800">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <div
+                  className={`text-2xl sm:text-4xl font-mono font-bold ${
+                    timer.isPaused ? 'text-amber-600' : 'text-gray-800'
+                  }`}
+                >
                   {formatTime(timer.elapsedSeconds)}
                 </div>
+                {timer.isPaused ? (
+                  <button
+                    onClick={() => handleResume(timer.projectId)}
+                    className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm sm:text-lg font-bold bg-green-500 hover:bg-green-600 text-white transition-all"
+                    title="Pokračovat"
+                  >
+                    ▶
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handlePause(timer.projectId)}
+                    className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm sm:text-lg font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all"
+                    title="Pozastavit"
+                  >
+                    ⏸
+                  </button>
+                )}
                 <button
                   onClick={() => handleStop(timer.projectId)}
-                  className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm sm:text-lg font-bold bg-red-500 hover:bg-red-600 text-white transition-all animate-pulse"
+                  className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm sm:text-lg font-bold bg-red-500 hover:bg-red-600 text-white transition-all"
                 >
                   STOP
                 </button>

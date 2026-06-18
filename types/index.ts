@@ -44,7 +44,9 @@ export interface ActiveTimer {
 
 export interface ActiveTimerEntry {
   projectId: string;
-  startTime: Timestamp;
+  startTime: Timestamp | null; // null when paused
+  accumulatedSeconds: number; // time accrued before the current running segment
+  isPaused: boolean;
 }
 
 export interface MonthlyStats {

@@ -297,21 +297,72 @@ export async function deleteTimeEntry(id: string, projectId: string, duration: n
 // Multi-timer functions - stores timers as array in single document active_timer/{userId}
 // This approach works with existing Firestore security rules (no subcollection needed)
 
+interface StoredTimer {
+  projectId: string;
+  startTime: Timestamp | null;
+  accumulatedSeconds?: number;
+  isPaused?: boolean;
+}
+
 export async function startProjectTimer(userId: string, projectId: string, startTime?: Date): Promise<void> {
   const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, userId);
   const timerSnap = await getDoc(timerRef);
   const ts = startTime ? Timestamp.fromDate(startTime) : Timestamp.now();
+  const newTimer: StoredTimer = { projectId, startTime: ts, accumulatedSeconds: 0, isPaused: false };
 
   if (timerSnap.exists()) {
     const data = timerSnap.data();
-    const timers: Array<{ projectId: string; startTime: Timestamp }> = data.timers || [];
+    const timers: StoredTimer[] = data.timers || [];
     // Remove existing timer for this project if any
     const filtered = timers.filter(t => t.projectId !== projectId);
-    filtered.push({ projectId, startTime: ts });
+    filtered.push(newTimer);
     await setDoc(timerRef, { timers: filtered });
   } else {
-    await setDoc(timerRef, { timers: [{ projectId, startTime: ts }] });
+    await setDoc(timerRef, { timers: [newTimer] });
   }
+}
+
+export async function pauseProjectTimer(userId: string, projectId: string): Promise<void> {
+  const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, userId);
+  const timerSnap = await getDoc(timerRef);
+  if (!timerSnap.exists()) return;
+
+  const data = timerSnap.data();
+  const timers: StoredTimer[] = data.timers || [];
+  const now = Timestamp.now();
+
+  const updated = timers.map((t) => {
+    if (t.projectId !== projectId || t.isPaused || !t.startTime) return t;
+    const segment = Math.floor((now.toMillis() - t.startTime.toMillis()) / 1000);
+    return {
+      projectId: t.projectId,
+      startTime: null,
+      accumulatedSeconds: (t.accumulatedSeconds || 0) + Math.max(0, segment),
+      isPaused: true,
+    };
+  });
+  await setDoc(timerRef, { timers: updated });
+}
+
+export async function resumeProjectTimer(userId: string, projectId: string): Promise<void> {
+  const timerRef = doc(db, COLLECTIONS.ACTIVE_TIMER, userId);
+  const timerSnap = await getDoc(timerRef);
+  if (!timerSnap.exists()) return;
+
+  const data = timerSnap.data();
+  const timers: StoredTimer[] = data.timers || [];
+  const now = Timestamp.now();
+
+  const updated = timers.map((t) => {
+    if (t.projectId !== projectId || !t.isPaused) return t;
+    return {
+      projectId: t.projectId,
+      startTime: now,
+      accumulatedSeconds: t.accumulatedSeconds || 0,
+      isPaused: false,
+    };
+  });
+  await setDoc(timerRef, { timers: updated });
 }
 
 export async function stopProjectTimer(userId: string, projectId: string): Promise<void> {
@@ -320,7 +371,7 @@ export async function stopProjectTimer(userId: string, projectId: string): Promi
 
   if (timerSnap.exists()) {
     const data = timerSnap.data();
-    const timers: Array<{ projectId: string; startTime: Timestamp }> = data.timers || [];
+    const timers: StoredTimer[] = data.timers || [];
     const filtered = timers.filter(t => t.projectId !== projectId);
     await setDoc(timerRef, { timers: filtered });
   }
@@ -339,15 +390,17 @@ export function subscribeToActiveTimers(
         const data = snapshot.data();
         // Support new format (timers array)
         if (data.timers && Array.isArray(data.timers)) {
-          const timers: ActiveTimerEntry[] = data.timers.map((t: { projectId: string; startTime: Timestamp }) => ({
+          const timers: ActiveTimerEntry[] = data.timers.map((t: StoredTimer) => ({
             projectId: t.projectId,
-            startTime: t.startTime,
+            startTime: t.startTime ?? null,
+            accumulatedSeconds: t.accumulatedSeconds || 0,
+            isPaused: t.isPaused || false,
           }));
           callback(timers);
         }
         // Support legacy format (single projectId + startTime)
         else if (data.projectId && data.startTime) {
-          callback([{ projectId: data.projectId, startTime: data.startTime }]);
+          callback([{ projectId: data.projectId, startTime: data.startTime, accumulatedSeconds: 0, isPaused: false }]);
         }
         else {
           callback([]);
